@@ -521,7 +521,7 @@ var board_func={
 					
 					objects.figures[ind].texture = gres[tex_id].texture;
 
-					objects.figures[ind].x = x * 50 + objects.board.x + 10;
+					objects.figures[ind].x = x * 50 + objects.board.x + 20;
 					objects.figures[ind].y = y * 50 + objects.board.y + 10;
 
 					objects.figures[ind].ix = x;
@@ -832,7 +832,7 @@ var timer = {
 	start : function(t) {
 		
 		if (t === undefined)
-			this.time_left = 30;
+			this.time_left = 45;
 		else 
 			this.time_left = t;
 	
@@ -994,8 +994,8 @@ var online_player = {
 		//устанавливаем статус в базе данных а если мы не видны то установливаем только скрытое состояние
 		set_state({state : 'p'});
 		
+		//g_board = [['r','n','b','q','k','b','n','r'],['p','p','p','p','p','p','p','p'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['P','P','P','P','P','P','P','P'],['R','N','B','K','Q','B','N','R']];
 		g_board = [['r','n','b','q','k','b','n','r'],['p','p','p','p','p','p','p','p'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['P','P','P','P','P','P','P','P'],['R','N','B','K','Q','B','N','R']];
-		g_board = [['r','n','b','q','k','b','n','x'],['p','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','P'],['x','N','B','K','Q','B','N','R']];
 	
 		
 		board_func.update_board();
@@ -1086,7 +1086,7 @@ var bot_player = {
 		//формируем фен строку и запускаем поиск решения
 		let fen = board_func.get_fen(g_board) + ' b';	
 		stockfish.postMessage('position fen ' + fen);		
-		stockfish.postMessage("go depth 1");
+		stockfish.postMessage("go depth 10");
 		
 	},
 	
@@ -1101,7 +1101,7 @@ var bot_player = {
 		
 		//сначала скрываем все шашки
 		g_board = [['r','n','b','q','k','b','n','r'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['R','N','B','K','Q','B','N','R']];
-		g_board = [['x','x','x','x','k','x','x','x'],['p','p','p','p','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','P','P','P','P'],['x','x','x','K','Q','B','N','R']];
+		g_board = [['r','n','b','q','k','b','n','r'],['p','p','p','p','p','p','p','p'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['P','P','P','P','P','P','P','P'],['R','N','B','K','Q','B','N','R']];
 
 		board_func.update_board();
 	},
@@ -1117,7 +1117,7 @@ var bot_player = {
 	
 	stockfish_response : function (e) {
 		
-		console.log(e.data);		
+		//console.log(e.data);		
 		
 		if (e.data.substring(0, 8) !== 'bestmove')
 			return
@@ -1232,20 +1232,19 @@ var game={
 		opp_conf_play=0;
 
 		game_res.resources.note.sound.play();
-		
-		
-		
+			
 		
 		//инициируем все что связано с оппонентом
 		this.opponent.init();
-		
-
-		
+				
 		//общие элементы для игры
 		objects.selected_frame.visible=false;
 		objects.board.visible=true;
 		objects.my_card_cont.visible=true;
 		objects.opp_card_cont.visible=true;		
+		objects.my_eaten_cont.visible=true;
+		objects.opp_eaten_cont.visible=true;		
+		
 		
 		//никакая фигура не быбрана
 		selected_figure=0;		
@@ -1294,7 +1293,7 @@ var game={
 		var my = e.data.global.y/app.stage.scale.y;
 
 		//координаты указателя на игровой доске
-		var new_x=Math.floor(8*(mx-objects.board.x-10)/400);
+		var new_x=Math.floor(8*(mx-objects.board.x-20)/400);
 		var new_y=Math.floor(8*(my-objects.board.y-10)/400);
 
 		//если фигура еще не выбрана
@@ -1464,6 +1463,8 @@ var game={
 		objects.cur_move_text.visible=false;
 		objects.opp_card_cont.visible=false;
 		objects.my_card_cont.visible=false;
+		objects.my_eaten_cont.visible=false;
+		objects.opp_eaten_cont.visible=false;	
 		objects.selected_frame.visible=false;		
 		objects.pawn_replace_dialog.visible=false;		
 		objects.mini_dialog.visible=false;	
@@ -1476,6 +1477,12 @@ var game={
 		opp_data.uid = '';
 		
 		move=0;		
+		
+		//показываем социальную панель
+		if (Math.random()>0.0)
+			social_dialog.show();
+		
+		show_ad();
 		
 		main_menu.activate();
 		
@@ -1640,9 +1647,9 @@ var make_move_on_board = async function ( move_data ) {
 	//подготавливаем данные для перестановки
 	let fig=board_func.get_checker_by_pos(move_data.x1,move_data.y1);
 	
-	let x1p=move_data.x1*50+objects.board.x+10;
+	let x1p=move_data.x1*50+objects.board.x+20;
 	let y1p=move_data.y1*50+objects.board.y+10;
-	let x2p=move_data.x2*50+objects.board.x+10;
+	let x2p=move_data.x2*50+objects.board.x+20;
 	let y2p=move_data.y2*50+objects.board.y+10;
 	
 	activity_on = 1;	
@@ -1770,7 +1777,7 @@ var req_dialog={
 		make_text(objects.opp_card_name,opp_data.name,150);
 
 		objects.opp_card_rating.text=objects.req_rating.text;
-		objects.opp_card_avatar.texture=objects.req_avatar.texture;
+		objects.opp_avatar.texture=objects.req_avatar.texture;
 
 		main_menu.close();
 		cards_menu.close();
@@ -1789,6 +1796,73 @@ var req_dialog={
 
 }
 
+var	show_ad=function(){
+		
+	if (game_platform==="YANDEX") {			
+		//показываем рекламу
+		window.ysdk.adv.showFullscreenAdv({
+		  callbacks: {
+			onClose: function() {}, 
+			onError: function() {}
+					}
+		})
+	}
+	
+	if (game_platform==="VK") {
+				 
+		vkBridge.send("VKWebAppShowNativeAds", {ad_format:"interstitial"})
+		.then(data => console.log(data.result))
+		.catch(error => console.log(error));	
+	}		
+}
+
+var social_dialog = {
+	
+	show : function() {
+		
+		anim2.add(objects.social_cont,{x:[800,objects.social_cont.sx]}, true, 0.06,'linear');
+		
+		
+	},
+	
+	invite_down : function() {
+		
+		if (objects.social_cont.ready !== true)
+			return;
+		
+		game_res.resources.click.sound.play();
+		vkBridge.send('VKWebAppShowInviteBox');
+		social_dialog.close();
+		
+	},
+	
+	share_down: function() {
+		
+		if (objects.social_cont.ready !== true)
+			return;
+		
+		game_res.resources.click.sound.play();
+		vkBridge.send('VKWebAppShowWallPostBox', {"message": `Мой рейтинг в игре шахматы-блий ${my_data.rating}. Сможешь победить меня?`,
+		"attachments": "https://vk.com/app7729354"});
+		social_dialog.close();
+	},
+	
+	close_down: function() {
+		if (objects.social_cont.ready !== true)
+			return;
+		
+		game_res.resources.click.sound.play();
+		social_dialog.close();
+	},
+	
+	close : function() {
+		
+		anim2.add(objects.social_cont,{x:[objects.social_cont.x,800]}, false, 0.06,'linear');
+				
+	}
+	
+}
+
 var main_menu= {
 
 
@@ -1798,6 +1872,8 @@ var main_menu= {
 		objects.main_buttons_cont.visible=true;
 		objects.desktop.visible=true;
 		objects.desktop.texture=game_res.resources.desktop.texture;
+		
+		
 
 	},
 
@@ -2652,11 +2728,10 @@ var cards_menu={
 			pending_player=opp_data.uid;
 		}
 
-
 		//сразу заполняем карточку оппонента
 		make_text(objects.opp_card_name,opp_data.name,160);
 		objects.opp_card_rating.text=objects.invite_rating.text;
-		objects.opp_card_avatar.texture=objects.invite_avatar.texture;
+		objects.opp_avatar.texture=objects.invite_avatar.texture;
 
 	},
 
@@ -3071,7 +3146,7 @@ async function load_user_data() {
 		await new Promise((resolve, reject)=> loader.load(resolve))
 		
 
-		objects.id_avatar.texture=objects.my_card_avatar.texture=loader.resources.my_avatar.texture;
+		objects.id_avatar.texture=objects.my_avatar.texture=loader.resources.my_avatar.texture;
 		
 		//получаем остальные данные об игроке
 		let snapshot = await firebase.database().ref("players/"+my_data.uid).once('value');
