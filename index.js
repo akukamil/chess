@@ -50,13 +50,13 @@ class player_mini_card_class extends PIXI.Container {
 		this.avatar.width=this.avatar.height=60;
 
 		this.name="";
-		this.name_text=new PIXI.BitmapText('...', {fontName: 'Century Gothic',fontSize: 20});
+		this.name_text=new PIXI.BitmapText('...', {fontName: 'Century Gothic',fontSize: 25});
 		this.name_text.anchor.set(0.5,0.5);
 		this.name_text.x=135;
 		this.name_text.y=35;
 
 		this.rating=0;
-		this.rating_text=new PIXI.BitmapText('...', {fontName: 'Century Gothic',fontSize: 24});
+		this.rating_text=new PIXI.BitmapText('...', {fontName: 'Century Gothic',fontSize: 28});
 		this.rating_text.tint=0xffff00;
 		this.rating_text.anchor.set(0.5,0.5);
 		this.rating_text.x=135;
@@ -74,13 +74,13 @@ class player_mini_card_class extends PIXI.Container {
 		this.avatar2.y=20;
 		this.avatar2.width=this.avatar2.height=60;
 
-		this.rating_text1=new PIXI.BitmapText('1400', {fontName: 'Century Gothic',fontSize: 18});
+		this.rating_text1=new PIXI.BitmapText('1400', {fontName: 'Century Gothic',fontSize: 22});
 		this.rating_text1.tint=0xffff00;
 		this.rating_text1.anchor.set(0.5,0);
 		this.rating_text1.x=50;
 		this.rating_text1.y=70;
 
-		this.rating_text2=new PIXI.BitmapText('1400', {fontName: 'Century Gothic',fontSize: 18});
+		this.rating_text2=new PIXI.BitmapText('1400', {fontName: 'Century Gothic',fontSize: 22});
 		this.rating_text2.tint=0xffff00;
 		this.rating_text2.anchor.set(0.5,0);
 		this.rating_text2.x=150;
@@ -2046,7 +2046,7 @@ var lb={
 
 				var players_array = [];
 				snapshot.forEach(players_data=> {
-					if (players_data.val().name!=="" && players_data.val().name!=='')
+					if (players_data.val().name!=="" && players_data.val().name!=='' && players_data.val().name!==undefined)
 						players_array.push([players_data.val().name, players_data.val().rating, players_data.val().pic_url]);
 				});
 
@@ -3319,7 +3319,7 @@ async function load_resources() {
 
 
 	game_res=new PIXI.Loader();
-	game_res.add("m2_font", git_src+"m_font.fnt");
+	game_res.add("m2_font", git_src+"fonts/Neucha/font.fnt");
 
 	game_res.add('receive_move',git_src+'receive_move.mp3');
 	game_res.add('note',git_src+'note.mp3');
