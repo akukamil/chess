@@ -13,7 +13,7 @@ let my_eaten = {'p':0,'r':0,'n':0,'b':0,'q':0};
 
 let f_colors = ['w','b'];
 var p = {'P':{res : 'wp'},'R':{res : 'wr'},'N':{res : 'wn'},'B':{res : 'wb'},'Q':{res : 'wq'},'K':{res : 'wk'},'p':{res : 'bp'},'r':{res : 'br'},'n':{res : 'bn'},'b':{res : 'bb'},'q':{res : 'bq'},'k':{res : 'bk'}}
-var stockfish = new Worker('https://akukamil.github.io/chess/stockfish.js');
+var stockfish = new Worker('stockfish.js');
 const chess = new Chess();
 
 irnd = function(min,max) {	
