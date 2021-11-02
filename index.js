@@ -3305,8 +3305,6 @@ async function init_game_env() {
 async function load_resources() {
 
 
-
-
 	//это нужно удалить потом
 	/*document.body.innerHTML = "Привет!\nДобавляем в игру некоторые улучшения))\nЗайдите через 40 минут.";
 	document.body.style.fontSize="24px";
@@ -3364,6 +3362,8 @@ async function load_resources() {
 	function progress(loader, resource) {
 		document.getElementById("m_bar").style.width =  Math.round(loader.progress)+"%";
 	}
+	
+
 	
 	await new Promise((resolve, reject)=> game_res.load(resolve))
 
