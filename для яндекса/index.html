@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+ <meta name="http-equiv" content="Content-type: text/html; charset=windows-1251">
+<style>
+		html,
+		body {
+		margin: 0;
+		padding: 0;
+		height: 100%;
+	}
+	
+	body {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background-color: black;
+		flex-direction: column
+	}
+	  
+  #m_progress {
+	  background: rgba(11,255,255,0.1);
+	  justify-content: flex-start;
+	  border-radius: 100px;
+	  align-items: center;
+	  position: relative;
+	  padding: 0 5px;
+	  display: flex;
+	  height: 50px;
+	  width: 70%;
+	}
+
+	#m_bar {
+	  box-shadow: 0 10px 40px -10px #fff;
+	  border-radius: 100px;
+	  background: #fff;
+	  height: 70%;
+	  width: 10%;
+	}
+	
+	
+	
+</style>
+
+
+
+
+<script src="https://www.gstatic.com/firebasejs/8.3.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.3.0/firebase-analytics.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.2.10/firebase-database.js"></script>
+
+
+<script>
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  var firebaseConfig = {
+    apiKey: "AIzaSyBZnSsCdbCve-tYjiH9f5JbGUDaGKWy074",
+    authDomain: "m-game-27669.firebaseapp.com",
+    projectId: "m-game-27669",
+    storageBucket: "m-game-27669.appspot.com",
+    messagingSenderId: "571786945826",
+    appId: "1:571786945826:web:7e8bd49c963bbea117317b",
+    measurementId: "G-XFJD615P3L"
+  };
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  firebase.analytics();
+</script>
+
+
+
+<div id="m_progress">
+  <div id="m_bar"></div>
+</div>
+
+
+
+
+<script src="load_list.txt" charset="utf-8"> </script>	
+<script type="text/javascript" src="pixi-legacy.min.js" ></script>
+<script src="pixi-sound.js"></script>
+<script type="text/javascript" src="https://akukamil.github.io/corners/index.js" charset="utf-8"></script>
+<script src="https://yandex.ru/games/sdk/v2"></script>
+ 
+ 
+<body onload="load_resources()">
+
+</body>
+
+</html>
