@@ -1479,8 +1479,9 @@ var game={
 		move=0;		
 		
 		//показываем социальную панель
-		if (Math.random()>0.0)
-			social_dialog.show();
+		if (game_platform === 'VK')
+			if (Math.random()>0.0)
+				social_dialog.show();
 		
 		show_ad();
 		
