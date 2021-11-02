@@ -3296,6 +3296,8 @@ async function init_game_env() {
 		
 	//показыаем основное меню
 	main_menu.activate();
+	
+	console.clear()
 
 	//запускаем главный цикл
 	main_loop();
