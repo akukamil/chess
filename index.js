@@ -1480,7 +1480,7 @@ var game={
 		
 		//показываем социальную панель
 		if (game_platform === 'VK')
-			if (Math.random()>0.0)
+			if (Math.random()>0.75)
 				social_dialog.show();
 		
 		show_ad();
