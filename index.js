@@ -2599,7 +2599,7 @@ var cards_menu={
 		};
 
 
-		any_dialog_active++;		
+		game_res.resources.click.sound.play();
 		
 		anim.add_pos({obj:objects.td_cont,param:'y',vis_on_end:true,func:'easeOutBack',val:[-150,'sy'],	speed:0.04});
 		
