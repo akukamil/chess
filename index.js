@@ -1175,11 +1175,11 @@ var bot_player = {
 			t = ['Поражение!\nВам поставили мат!',-1]		
 
 
-		let rating_update_info = rating.update(t[1]);		
+		//let rating_update_info = rating.update(t[1]);		
 		
 		game.play_finish_sound(t[1]);
 
-		await big_message.show(t[0],rating_update_info);
+		await big_message.show(t[0],'');
 		
 		game.stop();		
 	},
