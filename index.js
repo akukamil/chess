@@ -1086,13 +1086,16 @@ var bot_player = {
 		//формируем фен строку и запускаем поиск решения
 		let fen = board_func.get_fen(g_board) + ' b';	
 		stockfish.postMessage('position fen ' + fen);		
-		stockfish.postMessage("go depth 10");
+		stockfish.postMessage("go depth 5");
 		
 	},
 	
 	init : function () {
 		
 		stockfish.addEventListener('message', bot_player.stockfish_response);
+		
+		stockfish.postMessage("setoption name Skill Level value 0");
+		
 		
 		objects.stop_bot_button.visible=true;
 		
