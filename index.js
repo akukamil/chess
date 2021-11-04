@@ -1071,7 +1071,14 @@ var online_player = {
 
 		let rating_update_info = rating.update(t[1]);		
 
+		//записываем результат игры в базу данных
+		if (t[1] !== 999)
+			firebase.database().ref("finishes/"+game_id).set({'player1':objects.my_card_name.text,'player2':objects.opp_card_name.text, 'res':t[1], 'ts':firebase.database.ServerValue.TIMESTAMP});
+		
+
 		await big_message.show(t[0],rating_update_info);
+		
+		
 		
 		game.stop();
 		
@@ -1515,9 +1522,7 @@ var rating = {
 		firebase.database().ref("players/"+my_data.uid+"/rating").set(my_data.rating);
 		firebase.database().ref("players/"+[opp_data.uid]+"/rating").set(opp_new_rating);		
 		
-		//записываем результат игры в базу данных
-		firebase.database().ref("finishes/"+game_id).set({'player1':objects.my_card_name.text,'player2':objects.opp_card_name.text, 'res':game_result_for_player, 'ts':firebase.database.ServerValue.TIMESTAMP});
-		
+
 		return 'Рейтинг: ' + my_old_rating + ' > ' + my_new_rating;		
 		
 	},
