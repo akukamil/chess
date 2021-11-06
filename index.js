@@ -16,7 +16,7 @@ var p = {'P':{res : 'wp'},'R':{res : 'wr'},'N':{res : 'wn'},'B':{res : 'wb'},'Q'
 var stockfish = new Worker('stockfish.js');
 const chess = new Chess();
 
-irnd = function(min,max) {	
+irnd = function (min,max) {	
     min = Math.ceil(min);
     max = Math.floor(max);
     return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -987,16 +987,18 @@ var online_player = {
 		firebase.database().ref("inbox/"+opp_data.uid).set({sender:my_data.uid,message:"MOVE",tm:Date.now(),data:move_data});
 	},
 	
-	init : function () {
+	init : function (r) {
 		
 		objects.game_buttons_cont.visible=true;
 		
 		//устанавливаем статус в базе данных а если мы не видны то установливаем только скрытое состояние
 		set_state({state : 'p'});
 		
-		//g_board = [['r','n','b','q','k','b','n','r'],['p','p','p','p','p','p','p','p'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['P','P','P','P','P','P','P','P'],['R','N','B','K','Q','B','N','R']];
-		g_board = [['r','n','b','q','k','b','n','r'],['p','p','p','p','p','p','p','p'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['P','P','P','P','P','P','P','P'],['R','N','B','K','Q','B','N','R']];
-	
+		if (r === 'master')
+			g_board = [['r','n','b','q','k','b','n','r'],['p','p','p','p','p','p','p','p'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['P','P','P','P','P','P','P','P'],['R','N','B','Q','K','B','N','R']];
+		else
+			g_board = [['r','n','b','k','q','b','n','r'],['p','p','p','p','p','p','p','p'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['P','P','P','P','P','P','P','P'],['R','N','B','K','Q','B','N','R']];
+
 		
 		board_func.update_board();
 	},
@@ -1212,6 +1214,8 @@ var bot_player = {
 var game={
 
 	valid_moves : 0,
+	king_rook_no_move : 1,
+	player_under_check : 0,
 	opponent : {},
 
 	activate: function(role, opponent) {
@@ -1240,12 +1244,15 @@ var game={
 		//ни я ни оппонент пока не подтвердили игру
 		me_conf_play=0;
 		opp_conf_play=0;
-
+		
+		this.king_rook_no_move = 1;
+		this.player_under_check = 0;
+		
 		game_res.resources.note.sound.play();
 			
 		
 		//инициируем все что связано с оппонентом
-		this.opponent.init();
+		this.opponent.init(my_role);
 				
 		//общие элементы для игры
 		objects.selected_frame.visible=false;
@@ -1309,7 +1316,7 @@ var game={
 		//если фигура еще не выбрана
 		if (selected_figure===0)
 		{
-			this.valid_moves = [];
+			game.valid_moves = [];
 			
 			//проверяем что выбрана моя фигура а не оппонента или пустая клетка
 			let fig = g_board[new_y][new_x];
@@ -1327,7 +1334,7 @@ var game={
 			//воспроизводим соответствующий звук
 			gres.move.sound.play();
 						
-			this.valid_moves = board_func.get_valid_moves(g_board, selected_figure, opp_figs);
+			game.valid_moves = board_func.get_valid_moves(g_board, selected_figure, opp_figs);
 						
 
 			return;
@@ -1337,9 +1344,6 @@ var game={
 		if (selected_figure!==0)
 		{
 			
-			//формируем объект содержащий информацию о ходе
-			let m_data={x1:selected_figure.ix,y1:selected_figure.iy,x2:new_x, y2:new_y};			
-
 			//если нажали на выделенную шашку то отменяем выделение
 			if (new_x===selected_figure.ix && new_y===selected_figure.iy)
 			{
@@ -1347,12 +1351,41 @@ var game={
 				selected_figure=0;
 				objects.selected_frame.visible=false;
 				return;
-			}						
+			}				
+
+			//если игрок хочет рокировку, проверяем....
+			if (selected_figure.fig === 'K' && g_board[new_y][new_x] === 'R' && game.player_under_check === 0 && game.king_rook_no_move === 1) {
+				
+				if (new_x === 0 && selected_figure.ix === 4)				
+					if (g_board[7][1] === 'x' && g_board[7][2] === 'x' && g_board[7][3] === 'x')										
+						game.valid_moves.push(new_x+'_'+new_y)
+					
+				if (new_x === 0 && selected_figure.ix === 3)				
+					if (g_board[7][1] === 'x' && g_board[7][2] === 'x')										
+						game.valid_moves.push(new_x+'_'+new_y)
+									
+				if (new_x === 7 && selected_figure.ix === 4)				
+					if (g_board[7][5] === 'x' && g_board[7][6] === 'x')										
+						game.valid_moves.push(new_x+'_'+new_y)
+					
+				if (new_x === 7 && selected_figure.ix === 3)				
+					if (g_board[7][4] === 'x' && g_board[7][5] === 'x' && g_board[7][6] === 'x')										
+						game.valid_moves.push(new_x+'_'+new_y)					
+			}
 			
-			if (this.valid_moves.includes(new_x+'_'+new_y) === false) {				
+			
+			if (game.valid_moves.includes(new_x+'_'+new_y) === false) {				
 				add_message("так ходить нельзя");
 				return;
-			}		
+			}	
+			
+						
+			//указываем что король или ладья сделали движение и рокировка невозможна
+			if (selected_figure.fig === 'R' || selected_figure.fig === 'K') 
+				game.king_rook_no_move = 0;
+
+			//формируем объект содержащий информацию о ходе
+			let m_data={x1:selected_figure.ix,y1:selected_figure.iy,x2:new_x, y2:new_y};				
 
 			//проверяем на шах
 			let {x1,y1,x2,y2}=m_data;
@@ -1368,15 +1401,14 @@ var game={
 			
 			gres.click.sound.play();
 
+			//убираем выделение с фигуры
 			objects.selected_frame.visible=false;
 
 			//отменяем выделение
-			selected_figure=0;
-		
+			selected_figure=0;		
 
-			//отправляем ход сопернику
+			//дальнейшая обработка хода
 			game.process_my_move(m_data);
-
 
 		}
 
@@ -1388,12 +1420,18 @@ var game={
 		move++;
 		objects.cur_move_text.text="Ход: "+move;
 		let {x1,y1,x2,y2}=move_data;
-							
 		
+		//проверяем что это рокировку
+		let castling = 0;
+		if (g_board[y1][x1] === 'K' && g_board[y2][x2] === 'R' )
+			castling = 1;
 		
-		//перемещаем мою фигуру и обновляем доску		
-		await make_move_on_board(move_data);
-				
+		//перемещаем мою фигуру и обновляем доску	
+		if (castling === 1)
+			await this.make_castling_on_board(move_data);
+		else
+			await this.make_move_on_board(move_data);
+		
 		gres.move.sound.play();
 				
 		//диалог выбора фигуры
@@ -1407,7 +1445,6 @@ var game={
 		timer.sw();
 		my_turn = 0;			
 		
-		
 		//отпрравляем ход оппоненту
 		this.opponent.send_move(move_data);		
 				
@@ -1418,22 +1455,179 @@ var game={
 			add_message("Вы объявили шах!");
 		
 		if (final_state === 'checkmate' || final_state === 'stalemate' )
-			this.opponent.stop(final_state + '_to_opponent');
-		
+			this.opponent.stop(final_state + '_to_opponent');		
 		
 		//обозначаем что я сделал ход и следовательно подтвердил согласие на игру
 		me_conf_play=1;
 
 	},
+	
+	make_move_on_board : async function ( move_data ) {
 		
+		if (state === 'o')
+			return;
+			
+		let {x1,y1,x2,y2} = move_data;
+		
+	
+		//медленно убираем съеденную фигуру если она имеется
+		if (g_board[y2][x2] !=='x') {
+			sf=board_func.get_checker_by_pos(x2,y2);
+			anim2.add(sf,{alpha:[1,0]}, false, 0.06,'linear');
+		}
+		
+		//подготавливаем данные для перестановки
+		let fig=board_func.get_checker_by_pos(move_data.x1,move_data.y1);
+		
+		let x1p=move_data.x1*50+objects.board.x+20;
+		let y1p=move_data.y1*50+objects.board.y+10;
+		let x2p=move_data.x2*50+objects.board.x+20;
+		let y2p=move_data.y2*50+objects.board.y+10;
+		
+		activity_on = 1;	
+		await anim2.add(fig,{x:[x1p,x2p],y:[y1p,y2p]}, true, 0.05,'easeInOutCubic');
+		activity_on = 0;
+		
+		
+		let eaten_figure = g_board[y2][x2];
+		if (eaten_figure!=='x') {
+			
+			gres.eaten.sound.play();
+			
+			if (my_eaten[eaten_figure] !== undefined) {
+				my_eaten[eaten_figure]++;		
+				objects.my_pn.text = my_eaten.p;
+				objects.my_rn.text = my_eaten.r;
+				objects.my_nn.text = my_eaten.n;
+				objects.my_bn.text = my_eaten.b;
+				objects.my_qn.text = my_eaten.q;	
+			}
+			
+			if (opp_eaten[eaten_figure] !== undefined) {
+				opp_eaten[eaten_figure]++;			
+				objects.opp_pn.text = opp_eaten.P;
+				objects.opp_rn.text = opp_eaten.R;
+				objects.opp_nn.text = opp_eaten.N;
+				objects.opp_bn.text = opp_eaten.B;
+				objects.opp_qn.text = opp_eaten.Q;	
+			}
+		}
+		
+		
+		//обновляем доску
+		g_board[y2][x2] = g_board[y1][x1];
+		g_board[y1][x1] = 'x'	
+		
+		//если производится замена пешки
+		if (move_data.pawn_replace !== undefined) 
+			g_board[y2][x2] = move_data.pawn_replace;	
+			
+		board_func.update_board();
+	},
+	
+	make_castling_on_board : async function ( move_data ) {
+		
+		if (state === 'o')
+			return;
+			
+		let {x1,y1,x2,y2} = move_data;
+				
+		let y = 0;
+		let king_x1 = 0;
+		let king_x2 = 0;
+		let rook_x1 = 0;
+		let rook_x2 = 0;
+		let castling_short = (Math.abs( x2 - x1 ) === 3);
+		let castling_dir = Math.sign( x2 - x1 );
+		
+		//моя короткая
+		if (y1 === 7 && castling_short === true) {			
+			y = 7;
+			king_x1 = x1;
+			king_x2 = x1 + castling_dir * 2;
+			rook_x1 = x2;
+			rook_x2 = x2 - castling_dir * 2;
+		}
+				
+		//моя длинная
+		if (y1 === 7  && castling_short === false) {			
+			y = 7;
+			king_x1 = x1;
+			king_x2 = x1 + castling_dir * 2;
+			rook_x1 = x2;
+			rook_x2 = x2 - castling_dir * 3;
+		}
+		
+		//оппонента короткая
+		if (y1 === 0 && castling_short === true) {			
+			y = 0;
+			king_x1 = x1;
+			king_x2 = x1 + castling_dir * 2;
+			rook_x1 = x2;
+			rook_x2 = x2 - castling_dir * 2;
+		}
+		
+		//оппонента длинная
+		if (y1 === 0 && castling_short === false) {			
+			y = 0;
+			king_x1 = x1;
+			king_x2 = x1 + castling_dir * 2;
+			rook_x1 = x2;
+			rook_x2 = x2 - castling_dir * 3;
+		}
+	
+		//подготавливаем данные для перестановки
+		let king_fig=board_func.get_checker_by_pos(move_data.x1,move_data.y1);
+		let rook_fig=board_func.get_checker_by_pos(move_data.x2,move_data.y2);
+		
+		
+		let king_x1p = king_x1*50 + objects.board.x+20;
+		let king_y1p = y*50 + objects.board.y+10;		
+		let king_x2p = king_x2*50 + objects.board.x+20;
+		let king_y2p = y*50 + objects.board.y+10;
+		
+		let rook_x1p = rook_x1*50 + objects.board.x+20;
+		let rook_y1p = y*50 + objects.board.y+10;		
+		let rook_x2p = rook_x2*50 + objects.board.x+20;
+		let rook_y2p = y*50 + objects.board.y+10;
+		
+		activity_on = 1;	
+		await anim2.add(king_fig,{x:[king_x1p,king_x2p]}, true, 0.05,'easeInOutCubic');
+		await anim2.add(rook_fig,{x:[rook_x1p,rook_x2p]}, true, 0.05,'easeInOutCubic');
+		activity_on = 0;
+							
+		
+		//обновляем доску
+		g_board[y][rook_x2] = g_board[y][rook_x1] ;
+		g_board[y][king_x2] = g_board[y][king_x1] ;
+		
+		//убираем старые
+		g_board[y][rook_x1] = 'x';		
+		g_board[y][king_x1] = 'x';	
+		
+					
+		board_func.update_board();
+	},
+	
 	receive_move : async function (move_data) {
 		
 		//воспроизводим уведомление о том что соперник произвел ход
 		game_res.resources.receive_move.sound.play();
 
-		//плавно перемещаем шашку
-		await make_move_on_board( move_data );
+		let {x1,y1,x2,y2} = move_data;
 		
+		//проверяем что это рокировку
+		let castling = 0;
+		if (g_board[y1][x1] === 'k' && g_board[y2][x2] === 'r' )
+			castling = 1;
+		
+		//перемещаем мою фигуру и обновляем доску	
+		if (castling === 1)
+			await this.make_castling_on_board(move_data);
+		else
+			await this.make_move_on_board(move_data);
+		
+				
 		//перезапускаем таймер хода и кто ходит
 		timer.sw();		
 		my_turn = 1;	
@@ -1444,11 +1638,22 @@ var game={
 		//проверяем звершение игры
 		let final_state = board_func.check_fin(g_board,'w');		
 					
-		if (final_state === 'check')
-			add_message("Шах!");
+
+
 		
-		if (final_state === 'checkmate' || final_state === 'stalemate' )
-			this.opponent.stop(final_state + '_to_player');		
+		if (final_state === 'checkmate' || final_state === 'stalemate' ) {
+			this.opponent.stop(final_state + '_to_player');			
+			return;
+		}
+
+
+		//поверяем шах
+		if (final_state === 'check') {
+			add_message("Шах!");			
+			this.player_under_check = 1;			
+		} else {
+			this.player_under_check = 0;
+		}
 		
 	},
 		
@@ -1638,69 +1843,6 @@ var process_new_message=function(msg) {
 				req_dialog.hide(msg.sender);
 		}
 	}
-}
-
-var make_move_on_board = async function ( move_data ) {
-	
-	if (state === 'o')
-		return;
-		
-	let {x1,y1,x2,y2} = move_data;
-	
-	//медленно убираем съеденную фигуру если она имеется
-	if (g_board[y2][x2] !=='x') {
-		sf=board_func.get_checker_by_pos(x2,y2);
-		anim2.add(sf,{alpha:[1,0]}, false, 0.06,'linear');
-	}
-	
-	//подготавливаем данные для перестановки
-	let fig=board_func.get_checker_by_pos(move_data.x1,move_data.y1);
-	
-	let x1p=move_data.x1*50+objects.board.x+20;
-	let y1p=move_data.y1*50+objects.board.y+10;
-	let x2p=move_data.x2*50+objects.board.x+20;
-	let y2p=move_data.y2*50+objects.board.y+10;
-	
-	activity_on = 1;	
-	await anim2.add(fig,{x:[x1p,x2p],y:[y1p,y2p]}, true, 0.05,'easeInOutCubic');
-	activity_on = 0;
-	
-	
-	let eaten_figure = g_board[y2][x2];
-	if (eaten_figure!=='x') {
-		
-		gres.eaten.sound.play();
-		
-		if (my_eaten[eaten_figure] !== undefined) {
-			my_eaten[eaten_figure]++;		
-			objects.my_pn.text = my_eaten.p;
-			objects.my_rn.text = my_eaten.r;
-			objects.my_nn.text = my_eaten.n;
-			objects.my_bn.text = my_eaten.b;
-			objects.my_qn.text = my_eaten.q;	
-		}
-		
-		if (opp_eaten[eaten_figure] !== undefined) {
-			opp_eaten[eaten_figure]++;			
-			objects.opp_pn.text = opp_eaten.P;
-			objects.opp_rn.text = opp_eaten.R;
-			objects.opp_nn.text = opp_eaten.N;
-			objects.opp_bn.text = opp_eaten.B;
-			objects.opp_qn.text = opp_eaten.Q;	
-		}
-	}
-	
-	
-	//обновляем доску
-	g_board[y2][x2] = g_board[y1][x1];
-	g_board[y1][x1] = 'x'	
-	
-	//если производится замена пешки
-	if (move_data.pawn_replace !== undefined) 
-		g_board[y2][x2] = move_data.pawn_replace;	
-		
-	board_func.update_board();
-
 }
 
 var req_dialog={
