@@ -998,8 +998,14 @@ var online_player = {
 			g_board = [['r','n','b','q','k','b','n','r'],['p','p','p','p','p','p','p','p'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['P','P','P','P','P','P','P','P'],['R','N','B','Q','K','B','N','R']];
 		else
 			g_board = [['r','n','b','k','q','b','n','r'],['p','p','p','p','p','p','p','p'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['P','P','P','P','P','P','P','P'],['R','N','B','K','Q','B','N','R']];
+		/*
+		if (r === 'master')
+			g_board = [['r','n','b','q','k','b','n','r'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['R','N','B','Q','K','B','N','R']];
+		else
+			g_board = [['r','n','b','k','q','b','n','r'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['R','N','B','K','Q','B','N','R']];
+*/
 
-		
+
 		board_func.update_board();
 	},
 	
@@ -1214,7 +1220,7 @@ var bot_player = {
 var game={
 
 	valid_moves : 0,
-	king_rook_no_move : 1,
+	move_made : [0,0,0],
 	player_under_check : 0,
 	opponent : {},
 
@@ -1245,7 +1251,7 @@ var game={
 		me_conf_play=0;
 		opp_conf_play=0;
 		
-		this.king_rook_no_move = 1;
+		this.move_made = [0,0,0,0,0,0,0,0];
 		this.player_under_check = 0;
 		
 		game_res.resources.note.sound.play();
@@ -1352,37 +1358,52 @@ var game={
 				objects.selected_frame.visible=false;
 				return;
 			}				
-
+			
+			
+			let castling = 0;
+			
 			//если игрок хочет рокировку, проверяем....
-			if (selected_figure.fig === 'K' && g_board[new_y][new_x] === 'R' && game.player_under_check === 0 && game.king_rook_no_move === 1) {
+			let c1 = selected_figure.fig === 'K';
+			let c2 = game.move_made[1] === 0;
+			
+			let c4 = g_board[new_y][new_x] === 'R';
+			let c3 = game.move_made[new_x] === 0;	
+			
+			let c5 = game.player_under_check === 0;
+
+			if (c1 && c2 && c3 && c4 && c5) {
 				
 				if (new_x === 0 && selected_figure.ix === 4)				
 					if (g_board[7][1] === 'x' && g_board[7][2] === 'x' && g_board[7][3] === 'x')										
-						game.valid_moves.push(new_x+'_'+new_y)
+						castling = 1;
 					
 				if (new_x === 0 && selected_figure.ix === 3)				
 					if (g_board[7][1] === 'x' && g_board[7][2] === 'x')										
-						game.valid_moves.push(new_x+'_'+new_y)
+						castling = 1;
 									
 				if (new_x === 7 && selected_figure.ix === 4)				
 					if (g_board[7][5] === 'x' && g_board[7][6] === 'x')										
-						game.valid_moves.push(new_x+'_'+new_y)
+						castling = 1;
 					
 				if (new_x === 7 && selected_figure.ix === 3)				
 					if (g_board[7][4] === 'x' && g_board[7][5] === 'x' && g_board[7][6] === 'x')										
-						game.valid_moves.push(new_x+'_'+new_y)					
+						castling = 1;				
 			}
 			
 			
-			if (game.valid_moves.includes(new_x+'_'+new_y) === false) {				
+			if (game.valid_moves.includes(new_x+'_'+new_y) === false && castling === 0) {				
 				add_message("так ходить нельзя");
 				return;
 			}	
 			
-						
-			//указываем что король или ладья сделали движение и рокировка невозможна
-			if (selected_figure.fig === 'R' || selected_figure.fig === 'K') 
-				game.king_rook_no_move = 0;
+			//уточняем положение если рокировка
+			let old_new_x = new_x;
+			if (castling === 1) {
+				let dir = Math.sign(new_x - selected_figure.ix);
+				new_x = selected_figure.ix + dir * 2;				
+			}
+									
+
 
 			//формируем объект содержащий информацию о ходе
 			let m_data={x1:selected_figure.ix,y1:selected_figure.iy,x2:new_x, y2:new_y};				
@@ -1397,7 +1418,19 @@ var game={
 			if (is_check === true) {
 				add_message("так вам шах");				
 				return;
-			}
+			}			
+			
+			//указываем что король или ладья сделали движение и рокировка больше невозможна
+			if (x1 === 0 && y1 === 7)
+				game.move_made[0] = 1			
+			if (x1 === 7 && y1 === 7)
+				game.move_made[7] = 1
+			if (selected_figure.fig === 'K')
+				game.move_made[1] = 1;
+			
+		
+			//возвращаем после предварительной рокировки
+			m_data.x2 = old_new_x;
 			
 			gres.click.sound.play();
 
@@ -1408,23 +1441,18 @@ var game={
 			selected_figure=0;		
 
 			//дальнейшая обработка хода
-			game.process_my_move(m_data);
+			game.process_my_move(m_data, castling);
 
 		}
 
 	},
 
-	process_my_move : async function (move_data) {
+	process_my_move : async function (move_data, castling) {
 
 		//обновляем счетчик хода
 		move++;
 		objects.cur_move_text.text="Ход: "+move;
 		let {x1,y1,x2,y2}=move_data;
-		
-		//проверяем что это рокировку
-		let castling = 0;
-		if (g_board[y1][x1] === 'K' && g_board[y2][x2] === 'R' )
-			castling = 1;
 		
 		//перемещаем мою фигуру и обновляем доску	
 		if (castling === 1)
@@ -1592,8 +1620,9 @@ var game={
 		let rook_y2p = y*50 + objects.board.y+10;
 		
 		activity_on = 1;	
-		await anim2.add(king_fig,{x:[king_x1p,king_x2p]}, true, 0.05,'easeInOutCubic');
-		await anim2.add(rook_fig,{x:[rook_x1p,rook_x2p]}, true, 0.05,'easeInOutCubic');
+		
+		await Promise.all([anim2.add(king_fig,{x:[king_x1p,king_x2p]}, true, 0.05,'easeInOutCubic'), anim2.add(rook_fig,{x:[rook_x1p,rook_x2p]}, true, 0.05,'easeInOutCubic')]);
+
 		activity_on = 0;
 							
 		
@@ -3517,21 +3546,15 @@ async function load_resources() {
 	
 	await new Promise((resolve, reject)=> game_res.load(resolve))
 
-	console.log("sdfds");
 }
 
 function main_loop() {
-
-	//обработка передвижения шашек
-	//board_func.process_checker_move();
-
 	//глобальная функция
 	g_process();
 
 	game_tick+=0.016666666;
 	anim.process();
 	anim2.process();
-    //app.render(app.stage);
 	requestAnimationFrame(main_loop);
 }
 
