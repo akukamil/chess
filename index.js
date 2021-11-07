@@ -1109,7 +1109,7 @@ var bot_player = {
 		
 		stockfish.addEventListener('message', bot_player.stockfish_response);
 		
-		stockfish.postMessage("setoption name Skill Level value 0");
+		stockfish.postMessage("setoption name Skill Level value 3");
 		
 		
 		objects.stop_bot_button.visible=true;
@@ -1118,8 +1118,7 @@ var bot_player = {
 		set_state({state : 'b'});
 		
 		//сначала скрываем все шашки
-		g_board = [['r','n','b','q','k','b','n','r'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['R','N','B','K','Q','B','N','R']];
-		g_board = [['r','n','b','q','k','b','n','r'],['p','p','p','p','p','p','p','p'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['P','P','P','P','P','P','P','P'],['R','N','B','K','Q','B','N','R']];
+		g_board = [['r','n','b','q','k','b','n','r'],['p','p','p','p','p','p','p','p'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['P','P','P','P','P','P','P','P'],['R','N','B','Q','K','B','N','R']];
 
 		board_func.update_board();
 	},
@@ -3549,12 +3548,17 @@ async function load_resources() {
 }
 
 function main_loop() {
+
+	//обработка передвижения шашек
+	//board_func.process_checker_move();
+
 	//глобальная функция
 	g_process();
 
 	game_tick+=0.016666666;
 	anim.process();
 	anim2.process();
+    //app.render(app.stage);
 	requestAnimationFrame(main_loop);
 }
 
