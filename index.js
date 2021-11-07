@@ -1107,10 +1107,9 @@ var bot_player = {
 	
 	init : function () {
 		
-		stockfish.addEventListener('message', bot_player.stockfish_response);
 		
+		stockfish.postMessage("ucinewgame");		
 		stockfish.postMessage("setoption name Skill Level value 3");
-		
 		
 		objects.stop_bot_button.visible=true;
 		
@@ -1134,7 +1133,7 @@ var bot_player = {
 	
 	stockfish_response : function (e) {
 		
-		//console.log(e.data);		
+		console.log(e.data);		
 		
 		if (e.data.substring(0, 8) !== 'bestmove')
 			return
@@ -1876,8 +1875,13 @@ var process_new_message=function(msg) {
 var req_dialog={
 
 	show(uid) {
+		
 
 		firebase.database().ref("players/"+uid).once('value').then((snapshot) => {
+
+			//не показываем диалог если мы в игре
+			if (state === 'p')
+				return;
 
 			player_data=snapshot.val();
 
@@ -3482,7 +3486,9 @@ async function init_game_env() {
 
 async function load_resources() {
 
-
+	//сообщения от стокфиша
+	stockfish.addEventListener('message', bot_player.stockfish_response);
+	
 	//это нужно удалить потом
 	/*document.body.innerHTML = "Привет!\nДобавляем в игру некоторые улучшения))\nЗайдите через 40 минут.";
 	document.body.style.fontSize="24px";
@@ -3549,16 +3555,13 @@ async function load_resources() {
 
 function main_loop() {
 
-	//обработка передвижения шашек
-	//board_func.process_checker_move();
-
 	//глобальная функция
 	g_process();
 
 	game_tick+=0.016666666;
 	anim.process();
 	anim2.process();
-    //app.render(app.stage);
+
 	requestAnimationFrame(main_loop);
 }
 
