@@ -847,8 +847,13 @@ var timer = {
 		
 		this.time_left--;
 		
-		if (this.time_left >= 0)
-			objects.timer.text = '0:'+this.time_left;
+		if (this.time_left >= 0) {
+			if ( this.time_left >9 )
+				objects.timer.text = '0:'+this.time_left;
+			else
+				objects.timer.text = '0:0'+this.time_left;
+		}
+			
 		
 		clearTimeout(this.ticker);
 		this.ticker = setTimeout(function(){timer.tick()}, 1000);
@@ -1290,9 +1295,6 @@ var game={
 		objects.my_nn.text = objects.opp_nn.text = 0;
 		objects.my_bn.text = objects.opp_bn.text = 0;
 		objects.my_qn.text = objects.opp_qn.text = 0;			
-
-
-
 
 	},
 
