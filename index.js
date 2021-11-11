@@ -1,6 +1,6 @@
 var M_WIDTH=800, M_HEIGHT=450;
 var app, game_res, game, objects={}, state="",my_role="", game_tick=0, my_turn=0, selected_figure=0, move=0, game_id=0;
-var me_conf_play=0,opp_conf_play=0, any_dialog_active=0,  h_state=0, game_platform="",activity_on=1, hidden_state_start = 0;
+var me_conf_play=0,opp_conf_play=0, any_dialog_active=0, h_state=0, game_platform="",activity_on=1, hidden_state_start = 0;
 g_board=[];
 var players="", pending_player="";
 var my_data={opp_id : ''},opp_data={};
@@ -639,7 +639,6 @@ var board_func={
 				if (brd[ty][tx] === 'x')				
 					valid_moves.push(tx+'_'+ty)
 			
-			
 			//проверяем возможность хода вперед на две клетки
 			let iy =  f.fig === 'p' ? 1 : 6;
 			tx = cx;
@@ -653,8 +652,7 @@ var board_func={
 			ty = cy + dy;				
 			if (ty > -1 && ty < 8 && tx > -1)
 				if (figures_to_eat.includes(brd[ty][tx])  === true)				
-					valid_moves.push(tx+'_'+ty)
-			
+					valid_moves.push(tx+'_'+ty)			
 			
 			//проверяем возможность есть вправо
 			tx = cx + 1;
@@ -662,6 +660,20 @@ var board_func={
 			if (ty > -1 && ty < 8 && tx < 8)
 				if (figures_to_eat.includes(brd[ty][tx])  === true)				
 					valid_moves.push(tx+'_'+ty)
+							
+			
+			//проверяем возможность взятия пешки на проходе
+			if (f.fig === 'P' && f.iy === 3 && pass_take !== -1) {
+				
+				tx = cx - 1;
+				if (tx === pass_take)
+					valid_moves.push(tx+'_'+2);				
+				
+				tx = cx + 1;
+				if (tx === pass_take)
+					valid_moves.push(tx+'_'+2);				
+			}
+			
 				
 			return valid_moves;
 			
@@ -764,7 +776,8 @@ var board_func={
 			//положение короля
 			let king_pos = board_func.get_figure_pos(brd, king);
 			king_pos = king_pos[0] + '_' + king_pos[1];
-			//проверяем все фигуры
+			
+			//проверяем все фигуры - есть ли у них возможность есть короля
 			for (var x = 0; x < 8; x++) {
 				for (var y = 0; y < 8; y++) {				
 					if(my_figs.includes(brd[y][x])) {
@@ -786,7 +799,7 @@ var board_func={
 			let king_pos = board_func.get_figure_pos(brd, king);
 			king_pos = king_pos[0] + '_' + king_pos[1];
 			
-			//проверяем все фигуры
+			//проверяем все фигуры - есть ли у них возможность есть короля
 			for (var x = 0; x < 8; x++) {
 				for (var y = 0; y < 8; y++) {				
 					if(opp_figs.includes(brd[y][x])) {
@@ -1396,17 +1409,18 @@ var game={
 				return;
 			}	
 			
-			//уточняем положение если рокировка
+			
+			//исправляем новый ход если есть рокировка
 			let old_new_x = new_x;
 			if (castling === 1) {
 				let dir = Math.sign(new_x - selected_figure.ix);
 				new_x = selected_figure.ix + dir * 2;				
 			}
-									
-
+			
 
 			//формируем объект содержащий информацию о ходе
-			let m_data={x1:selected_figure.ix,y1:selected_figure.iy,x2:new_x, y2:new_y};				
+			let m_data={x1:selected_figure.ix,y1:selected_figure.iy,x2:new_x, y2:new_y};	
+			
 
 			//проверяем на шах
 			let {x1,y1,x2,y2}=m_data;
@@ -1418,8 +1432,8 @@ var game={
 			if (is_check === true) {
 				add_message("так вам шах");				
 				return;
-			}			
-			
+			}		
+						
 			//указываем что король или ладья сделали движение и рокировка больше невозможна
 			if (x1 === 0 && y1 === 7)
 				game.move_made[0] = 1			
@@ -1453,6 +1467,7 @@ var game={
 		move++;
 		objects.cur_move_text.text="Ход: "+move;
 		let {x1,y1,x2,y2}=move_data;
+					
 		
 		//перемещаем мою фигуру и обновляем доску	
 		if (castling === 1)
@@ -1497,10 +1512,24 @@ var game={
 			
 		let {x1,y1,x2,y2} = move_data;
 		
+		
+		//фиксируем если это взятие на проходе (пешка съела пустое поле)
+		let pass_taken_pawn_pos_y = 0;
+		if (g_board[y1][x1] === 'P' && x1 !== x2 && g_board[y2][x2] === 'x')
+			pass_taken_pawn_pos_y = 3;		
+		if (g_board[y1][x1] === 'p' && x1 !== x2 && g_board[y2][x2] === 'x')
+			pass_taken_pawn_pos_y = 4;
+		
 	
 		//медленно убираем съеденную фигуру если она имеется
 		if (g_board[y2][x2] !=='x') {
 			sf=board_func.get_checker_by_pos(x2,y2);
+			anim2.add(sf,{alpha:[1,0]}, false, 0.06,'linear');
+		}
+		
+		//определяем взятие пешки на проходе		
+		if (pass_taken_pawn_pos_y !== 0) {
+			sf=board_func.get_checker_by_pos(x2,pass_taken_pawn_pos_y);
 			anim2.add(sf,{alpha:[1,0]}, false, 0.06,'linear');
 		}
 		
@@ -1518,6 +1547,9 @@ var game={
 		
 		
 		let eaten_figure = g_board[y2][x2];
+		if (pass_taken_pawn_pos_y !== 0)
+			eaten_figure = g_board[pass_taken_pawn_pos_y][x2];
+		
 		if (eaten_figure!=='x') {
 			
 			gres.eaten.sound.play();
@@ -1545,6 +1577,9 @@ var game={
 		//обновляем доску
 		g_board[y2][x2] = g_board[y1][x1];
 		g_board[y1][x1] = 'x'	
+		
+		if (pass_taken_pawn_pos_y !== 0)
+			g_board[pass_taken_pawn_pos_y][x2] = 'x';
 		
 		//если производится замена пешки
 		if (move_data.pawn_replace !== undefined) 
@@ -1650,6 +1685,12 @@ var game={
 		if (g_board[y1][x1] === 'k' && g_board[y2][x2] === 'r' )
 			castling = 1;
 		
+		//если это движение пешки через клетку, то фиксируем это, чтобы взять потом на проходе
+		if (g_board[y1][x1] === 'p' && y1 === 1 && y2 === 3)
+			pass_take = x2;
+		else
+			pass_take = -1;
+		
 		//перемещаем мою фигуру и обновляем доску	
 		if (castling === 1)
 			await this.make_castling_on_board(move_data);
@@ -1667,9 +1708,7 @@ var game={
 		//проверяем звершение игры
 		let final_state = board_func.check_fin(g_board,'w');		
 					
-
-
-		
+	
 		if (final_state === 'checkmate' || final_state === 'stalemate' ) {
 			this.opponent.stop(final_state + '_to_player');			
 			return;
