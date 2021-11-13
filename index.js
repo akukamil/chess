@@ -1207,13 +1207,18 @@ var bot_player = {
 		
 		if (final_state === 'checkmate_to_player')			
 			t = ['Поражение!\nВам поставили мат!',-1]		
+		
+		//если выиграли бота то добавляем 1 балл к рейтингу
+		let rating_msg = ''
+		if (t[1] === 1) {
+			my_data.rating = my_data.rating + 1;			
+			firebase.database().ref("players/"+my_data.uid+"/rating").set(my_data.rating);
+			rating_msg = 'Рейтинг: +1'
+		}
 
-
-		//let rating_update_info = rating.update(t[1]);		
 		
 		game.play_finish_sound(t[1]);
-
-		await big_message.show(t[0],'');
+		await big_message.show(t[0],rating_msg);
 		
 		game.stop();		
 	},
