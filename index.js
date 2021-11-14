@@ -1211,7 +1211,8 @@ var bot_player = {
 		//если выиграли бота то добавляем 1 балл к рейтингу
 		let rating_msg = ''
 		if (t[1] === 1) {
-			my_data.rating = my_data.rating + 1;			
+			my_data.rating = my_data.rating + 1;	
+			objects.my_card_rating.text = my_data.rating;
 			firebase.database().ref("players/"+my_data.uid+"/rating").set(my_data.rating);
 			rating_msg = 'Рейтинг: +1'
 		}
