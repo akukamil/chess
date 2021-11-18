@@ -3228,7 +3228,8 @@ var auth = function() {
 					let rnd_num=Math.floor(Math.random()*rnd_names.length)
 					let rand_uid=Math.floor(Math.random() * 9999999);
 
-					my_data.name 		=	rnd_names[rnd_num]+rand_uid;
+					let name_postfix = rand_uid.toString().substring(0, 3);
+					my_data.name 		=	rnd_names[rnd_num] + name_postfix;
 					my_data.rating 		= 	1400;
 					my_data.uid			=	"ls"+rand_uid;
 					my_data.pic_url		=	'https://avatars.dicebear.com/v2/male/'+irnd(10,10000)+'.svg';
