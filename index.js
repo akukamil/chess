@@ -1796,11 +1796,13 @@ var rating = {
 		
 		my_data.rating = my_new_rating;
 		objects.my_card_rating.text = my_data.rating;
+		my_data.games++;
 				
 		//записываем в базу свой новый рейтинг и оппонента
 		firebase.database().ref("players/"+my_data.uid+"/rating").set(my_data.rating);
+		firebase.database().ref("players/"+[my_data.uid]+"/games").set(my_data.games);			
 		firebase.database().ref("players/"+[opp_data.uid]+"/rating").set(opp_new_rating);		
-		
+
 
 		return 'Рейтинг: ' + my_old_rating + ' > ' + my_new_rating;		
 		
@@ -3384,6 +3386,10 @@ async function load_user_data() {
 		data===null ?
 			my_data.rating=1400 :
 			my_data.rating = data.rating || 1400;
+			
+		data===null ?
+			my_data.games = 0 :
+			my_data.games = data.games || 1400;
 
 		//устанавливаем рейтинг в попап
 		objects.id_rating.text=objects.my_card_rating.text=my_data.rating;
@@ -3398,7 +3404,7 @@ async function load_user_data() {
 		firebase.database().ref("inbox/"+my_data.uid).on('value', (snapshot) => { process_new_message(snapshot.val());});
 
 		//обновляем данные в файербейс так как могли поменяться имя или фото
-		firebase.database().ref("players/"+my_data.uid).set({name:my_data.name, pic_url: my_data.pic_url, rating : my_data.rating, tm:firebase.database.ServerValue.TIMESTAMP});
+		firebase.database().ref("players/"+my_data.uid).set({name:my_data.name, pic_url: my_data.pic_url, rating : my_data.rating, games : my_data.games, tm:firebase.database.ServerValue.TIMESTAMP});
 
 		//устанавливаем мой статус в онлайн
 		set_state({state : 'o'});
