@@ -1125,7 +1125,9 @@ var bot_player = {
 	
 	init : function () {
 		
-		
+		//сообщения от стокфиша
+		stockfish.addEventListener('message', bot_player.stockfish_response);
+	
 		stockfish.postMessage("ucinewgame");		
 		stockfish.postMessage("setoption name Skill Level value 3");
 		
@@ -1187,6 +1189,9 @@ var bot_player = {
 			return
 		};
 						
+		//отключаем комманды
+		stockfish.removeEventListener('message', bot_player.stockfish_response);
+						
 		//отключаем взаимодейтсвие с доской
 		objects.board.pointerdown=null;
 		
@@ -1225,6 +1230,9 @@ var bot_player = {
 	},
 	
 	switch_stop : function () {
+		
+		//это отключение при приграшении
+		stockfish.removeEventListener('message', bot_player.stockfish_response);
 		
 		//отключаем взаимодейтсвие с доской
 		objects.board.pointerdown=null;
@@ -3540,8 +3548,7 @@ async function init_game_env() {
 
 async function load_resources() {
 
-	//сообщения от стокфиша
-	stockfish.addEventListener('message', bot_player.stockfish_response);
+
 	
 	//это нужно удалить потом
 	/*document.body.innerHTML = "Привет!\nДобавляем в игру некоторые улучшения))\nЗайдите через 40 минут.";
@@ -3618,4 +3625,3 @@ function main_loop() {
 
 	requestAnimationFrame(main_loop);
 }
-
