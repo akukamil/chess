@@ -3389,7 +3389,7 @@ async function load_user_data() {
 			
 		data===null ?
 			my_data.games = 0 :
-			my_data.games = data.games || 1400;
+			my_data.games = data.games || 0;
 
 		//устанавливаем рейтинг в попап
 		objects.id_rating.text=objects.my_card_rating.text=my_data.rating;
