@@ -173,8 +173,8 @@
 	firebase.database().ref().child("players").get().then((snapshot) => {		
 	
 		var data=snapshot.val();
-		data = Object.keys(data).map((key) => [key, data[key].name,data[key].rating,data[key].tm,new Date(data[key].tm).toLocaleString()]);
-		data.sort(function(a, b){return a[3] - b[3]});
+		data = Object.keys(data).map((key) => [key, data[key].name,data[key].rating,data[key].games,data[key].tm,new Date(data[key].tm).toLocaleString()]);
+		data.sort(function(a, b){return a[4] - b[4]});
 	
 		let total_removed=0;
 		data.forEach(p=>{
@@ -184,7 +184,7 @@
 			newRow.insertCell(1).appendChild(document.createTextNode(p[1]));
 			newRow.insertCell(2).appendChild(document.createTextNode(p[2]));
 			newRow.insertCell(3).appendChild(document.createTextNode(p[3]));
-			newRow.insertCell(4).appendChild(document.createTextNode(p[4]));
+			newRow.insertCell(4).appendChild(document.createTextNode(p[5]));
 			
 		
 			
