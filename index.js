@@ -1995,7 +1995,7 @@ var req_dialog = {
 			return;
 
 		anim.add_pos({obj:objects.req_cont,param:'y',vis_on_end:false,func:'easeInBack',val:['sy', 	-260],	speed:0.05});
-		firebase.database().ref("inbox/"+req_dialog._opp_data).set({sender:my_data.uid,message:"REJECT",tm:Date.now()});
+		firebase.database().ref("inbox/"+req_dialog._opp_data.uid).set({sender:my_data.uid,message:"REJECT",tm:Date.now()});
 	},
 
 	accept: function() {
