@@ -1129,7 +1129,19 @@ var bot_player = {
 		stockfish.addEventListener('message', bot_player.stockfish_response);
 	
 		stockfish.postMessage("ucinewgame");		
-		stockfish.postMessage("setoption name Skill Level value 3");
+		
+		if (my_data.rating>=0 && my_data.rating<1500 )
+			stockfish.postMessage("setoption name Skill Level value 3");
+		if (my_data.rating>=1500 && my_data.rating<1600 )
+			stockfish.postMessage("setoption name Skill Level value 5");
+		if (my_data.rating>=1600 && my_data.rating<1700 )
+			stockfish.postMessage("setoption name Skill Level value 7");
+		if (my_data.rating>=1700 && my_data.rating<1800 )
+			stockfish.postMessage("setoption name Skill Level value 9");
+		if (my_data.rating>=1800 && my_data.rating<1900 )
+			stockfish.postMessage("setoption name Skill Level value 11");
+		if (my_data.rating>=1900)
+			stockfish.postMessage("setoption name Skill Level value 13");
 		
 		objects.stop_bot_button.visible=true;
 		
