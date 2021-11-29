@@ -186,10 +186,15 @@
 			newRow.insertCell(3).appendChild(document.createTextNode(p[3]));
 			newRow.insertCell(4).appendChild(document.createTextNode(p[5]));
 			
-		
+			//Удаляем игроков с невалидным рейтингом
+			if (p[2] === undefined) {
+				firebase.database().ref("players/"+p[0]).remove();	
+				total_removed++;
+			}
+
 			
-			let  days_without_visit=(cur_ts-p[4])/86400000;
-			let days_without_allowed=10+35*(Math.max(Math.min(p[2],1800),1400)-1400)/400;
+			let days_without_visit=(cur_ts-p[4])/86400000;
+			let days_without_allowed=10+25*(Math.max(Math.min(p[2],1800),1400)-1400)/400;
 			if (days_without_visit>days_without_allowed) {
 				firebase.database().ref("players/"+p[0]).remove();
 				total_removed++;
