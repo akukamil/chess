@@ -1101,13 +1101,9 @@ var online_player = {
 		if (t[1] !== 999)
 			firebase.database().ref("finishes/"+game_id).set({'player1':objects.my_card_name.text,'player2':objects.opp_card_name.text, 'res':t[1], 'ts':firebase.database.ServerValue.TIMESTAMP});
 		
-
 		await big_message.show(t[0],rating_update_info);
-		
-		
-		
-		game.stop();
-		
+				
+		game.stop();		
 	}
 
 };
@@ -1820,8 +1816,8 @@ var rating = {
 				
 		//записываем в базу свой новый рейтинг и оппонента
 		firebase.database().ref("players/"+my_data.uid+"/rating").set(my_data.rating);
-		firebase.database().ref("players/"+[my_data.uid]+"/games").set(my_data.games);			
-		firebase.database().ref("players/"+[opp_data.uid]+"/rating").set(opp_new_rating);		
+		firebase.database().ref("players/"+my_data.uid+"/games").set(my_data.games);			
+		firebase.database().ref("players/"+opp_data.uid+"/rating").set(opp_new_rating);		
 
 
 		return 'Рейтинг: ' + my_old_rating + ' > ' + my_new_rating;		
