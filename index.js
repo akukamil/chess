@@ -1332,6 +1332,7 @@ var game={
 		objects.my_qn.text = objects.opp_qn.text = 0;			
 
 	},
+	
 
 	mouse_down_on_board : function(e) {
 
@@ -1379,9 +1380,9 @@ var game={
 						
 
 			return;
-
 		}
 
+		//если фигура выбрана
 		if (selected_figure!==0)
 		{
 			
@@ -1395,34 +1396,105 @@ var game={
 			}				
 			
 			
+			
+			//если игрок хочет рокировку, проверяем....			
 			let castling = 0;
+			let castling_dir = Math.sign(new_x - selected_figure.ix);
 			
-			//если игрок хочет рокировку, проверяем....
+			//где должен изначально стоять король
+			let king_orig_x = my_role === 'master' ? 4 : 3
+			
+			//выбрана первая линия
+			let c0 = selected_figure.iy === 7 && new_y === 7;
+			
+			//если выбрал короля
 			let c1 = selected_figure.fig === 'K';
-			let c2 = game.move_made[1] === 0;
 			
-			let c4 = g_board[new_y][new_x] === 'R';
-			let c3 = game.move_made[new_x] === 0;	
+			//если выбрал ячейку где должен сначала стоять король и он там стоит
+			let c2 = selected_figure.ix === king_orig_x;
 			
-			let c5 = game.player_under_check === 0;
+			//если сделал ход на 0 или 7 и там ладья
+			let c3 = (g_board[new_y][new_x] === 'R') && (new_x === 0 || new_x === 7)			
 
-			if (c1 && c2 && c3 && c4 && c5) {
+
+			if (c0 && c1 && c2 && c3) {
+								
 				
-				if (new_x === 0 && selected_figure.ix === 4)				
-					if (g_board[7][1] === 'x' && g_board[7][2] === 'x' && g_board[7][3] === 'x')										
-						castling = 1;
+				//если король не делал ход
+				let c4 = game.move_made[1] === 0;				
+				if (c4 === false) {
+					add_message("Рокировка невозможна. Король уже сделал ход.");				
+					return;
+				}					
+			
+				//если ладья не делала ход
+				let c5 = game.move_made[new_x] === 0;	
+				if (c5 === false) {
+					add_message("Рокировка невозможна. Ладья уже сделала ход.");				
+					return;
+				}				
+				
+				//если нет шаха
+				let c6 = game.player_under_check === 0;		
+				if (c6 === false) {
+					add_message("Рокировка невозможна. Вам Шах.");				
+					return;
+				}
+				
+				//проверяем наличие свободного поля между ладьей и королем
+				if (king_orig_x === 4) {
 					
-				if (new_x === 0 && selected_figure.ix === 3)				
-					if (g_board[7][1] === 'x' && g_board[7][2] === 'x')										
-						castling = 1;
-									
-				if (new_x === 7 && selected_figure.ix === 4)				
-					if (g_board[7][5] === 'x' && g_board[7][6] === 'x')										
-						castling = 1;
+					//проверяем длинную рокировку
+					if (new_x === 0) {
+						if (!(g_board[7][1] === 'x' && g_board[7][2] === 'x' && g_board[7][3] === 'x')) {
+							add_message("Рокировка невозможна. Поле не свободно.");				
+							return;
+						}							
+					}			
 					
-				if (new_x === 7 && selected_figure.ix === 3)				
-					if (g_board[7][4] === 'x' && g_board[7][5] === 'x' && g_board[7][6] === 'x')										
-						castling = 1;				
+					//проверяем короткую рокировку
+					if (new_x === 7) {
+						if (!(g_board[7][5] === 'x' && g_board[7][6] === 'x')) {
+							add_message("Рокировка невозможна. Поле не свободно.");				
+							return;
+						}								
+					}			
+					
+				} else {
+					
+					//проверяем длинную рокировку
+					if (new_x === 7) {
+						if (!(g_board[7][4] === 'x' && g_board[7][5] === 'x' && g_board[7][6] === 'x')){
+							add_message("Рокировка невозможна. Поле не свободно.");				
+							return;
+						}										
+					}			
+
+					//проверяем короткую рокировку
+					if (new_x === 0) {
+						if (!(g_board[7][1] === 'x' && g_board[7][2] === 'x')){
+							add_message("Рокировка невозможна. Поле не свободно.");				
+							return;
+						}								
+					}				
+				}	
+				
+				//проверяем битое поле на пути короля
+				let _new_x = selected_figure.ix + castling_dir;
+				let _m_data={x1:selected_figure.ix,y1:selected_figure.iy,x2:_new_x, y2:new_y};	
+				let {x1,y1,x2,y2}=_m_data;
+				let _new_board = JSON.parse(JSON.stringify(g_board));			
+				_new_board[y2][x2] = _new_board[y1][x1];
+				_new_board[y1][x1] = 'x';
+				
+				let _is_check = board_func.is_check(_new_board, 'K');
+				if (_is_check === true) {
+					add_message("Рокировка невозможна. Битое поле на пути короля.");				
+					return;
+				}			
+				
+
+				castling = 1;
 			}
 			
 			
@@ -1432,12 +1504,11 @@ var game={
 			}	
 			
 			
-			//исправляем новый ход если есть рокировка
+			//для проверки рокировки на шах указываем конечное назначение короля
 			let old_new_x = new_x;
-			if (castling === 1) {
-				let dir = Math.sign(new_x - selected_figure.ix);
-				new_x = selected_figure.ix + dir * 2;				
-			}
+			if (castling === 1)
+				new_x = selected_figure.ix + castling_dir * 2;				
+
 			
 
 			//формируем объект содержащий информацию о ходе
@@ -1452,7 +1523,7 @@ var game={
 			
 			let is_check = board_func.is_check(new_board, 'K');
 			if (is_check === true) {
-				add_message("так вам шах");				
+				castling === 1 ? add_message("Рокировка невозможна.Так вам шах") : add_message("Так вам шах");				
 				return;
 			}		
 						
@@ -3643,3 +3714,5 @@ function main_loop() {
 
 	requestAnimationFrame(main_loop);
 }
+
+
