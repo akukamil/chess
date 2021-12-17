@@ -187,7 +187,7 @@
 			newRow.insertCell(4).appendChild(document.createTextNode(p[5]));
 			
 			//Удаляем игроков с невалидным рейтингом
-			if (p[2] === undefined) {
+			if (p[2] === undefined || p[1] === undefined) {
 				firebase.database().ref("players/"+p[0]).remove();	
 				total_removed++;
 			}
