@@ -1099,7 +1099,7 @@ var online_player = {
 
 		//записываем результат игры в базу данных
 		if (t[1] !== 999)
-			firebase.database().ref("finishes/"+game_id).set({'player1':objects.my_card_name.text,'player2':objects.opp_card_name.text, 'res':t[1], 'ts':firebase.database.ServerValue.TIMESTAMP});
+			firebase.database().ref("finishes/"+game_id).set({'player1':objects.my_card_name.text,'player2':objects.opp_card_name.text, 'res':t[1], 'fin_type':final_state, 'ts':firebase.database.ServerValue.TIMESTAMP});
 		
 		await big_message.show(t[0],rating_update_info);
 				
@@ -1333,7 +1333,6 @@ var game={
 
 	},
 	
-
 	mouse_down_on_board : function(e) {
 
 		if (objects.big_message_cont.visible === true || objects.pawn_replace_dialog.visible === true || objects.req_cont.visible === true)	{
