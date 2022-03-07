@@ -2165,25 +2165,21 @@ var req_dialog = {
 
 var	show_ad=function(){
 		
-	if (game_platform==="YANDEX") {		
-		try {
-			await new Promise((resolve, reject) => {			
-				window.ysdk.adv.showFullscreenAdv({  callbacks: {onClose: function() {resolve()}, onError: function() {reject()}}});			
-			});				
-			
-		} catch (e) {
-			
-			console.error(e);
-		}
-
+	if (game_platform==="YANDEX") {			
+		//показываем рекламу
+		window.ysdk.adv.showFullscreenAdv({
+		  callbacks: {
+			onClose: function() {}, 
+			onError: function() {}
+					}
+		})
 	}
 	
-	if (game_platform==="VK") {				
-		try {
-			await vkBridge.send("VKWebAppShowNativeAds", {ad_format:"interstitial"});			
-		} catch (e) {			
-			console.error(e);
-		}	
+	if (game_platform==="VK") {
+				 
+		vkBridge.send("VKWebAppShowNativeAds", {ad_format:"interstitial"})
+		.then(data => console.log(data.result))
+		.catch(error => console.log(error));	
 	}		
 }
 
