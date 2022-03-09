@@ -1,7 +1,7 @@
 var M_WIDTH=800, M_HEIGHT=450;
-var app, game_res, game, objects={}, state="",my_role="", game_tick=0, my_turn=0, selected_figure=0, move=0, game_id=0;
+var app, game_res, game, objects={}, state="",my_role="", game_tick=0, my_turn=0, selected_figure=0, move=0, game_id=0, connected = 1;
 var me_conf_play=0,opp_conf_play=0, any_dialog_active=0, h_state=0, game_platform="",activity_on=1, hidden_state_start = 0;
-
+var WIN = 1, DRAW = 0, LOSE = -1, NOSYNC = 2;
 g_board=[];
 var players="", pending_player="";
 var my_data={opp_id : ''},opp_data={};
@@ -993,6 +993,9 @@ var mini_dialog = {
 }
 
 var online_player = {
+	
+	start_time : 0,
+	disconnect_time : 0,
 		
 	send_move : function  (move_data) {
 		
@@ -1006,12 +1009,36 @@ var online_player = {
 		firebase.database().ref("inbox/"+opp_data.uid).set({sender:my_data.uid,message:"MOVE",tm:Date.now(),data:move_data});
 	},
 	
+	calc_new_rating : function (old_rating, game_result) {
+		
+		
+		if (game_result === NOSYNC)
+			return old_rating;
+		
+		var Ea = 1 / (1 + Math.pow(10, ((opp_data.rating-my_data.rating)/400)));
+		if (game_result === WIN)
+			return Math.round(my_data.rating + 16 * (1 - Ea));
+		if (game_result === DRAW)
+			return Math.round(my_data.rating + 16 * (0.5 - Ea));
+		if (game_result === LOSE)
+			return Math.round(my_data.rating + 16 * (0 - Ea));
+		
+	},
+	
 	init : function (r) {
 		
 		objects.game_buttons_cont.visible=true;
 		
 		//устанавливаем статус в базе данных а если мы не видны то установливаем только скрытое состояние
 		set_state({state : 'p'});
+		
+		//фиксируем врему начала игры
+		this.start_time = Date.now();
+		
+		//вычиcляем рейтинг при проигрыше и устанавливаем его в базу он потом изменится
+		let lose_rating = this.calc_new_rating(my_data.rating, LOSE);
+		if (lose_rating >100 && lose_rating<9999)
+			firebase.database().ref("players/"+my_data.uid+"/rating").set(lose_rating);
 		
 		if (r === 'master')
 			g_board = [['r','n','b','q','k','b','n','r'],['p','p','p','p','p','p','p','p'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['P','P','P','P','P','P','P','P'],['R','N','B','Q','K','B','N','R']];
@@ -1034,16 +1061,25 @@ var online_player = {
 			return;
 		
 		if (t < 0 && my_turn === 1)	{
-			firebase.database().ref("inbox/"+opp_data.uid).set({sender:my_data.uid,message:"TIME",tm:Date.now(),data:{}});
-			this.stop('no_time_for_player');			
+			
+			if (me_conf_play === 1)
+				this.stop('my_timeout');
+			else
+				this.stop('my_no_sync');
+			
 			return;
 		}
 
 		if (t < -5 && my_turn === 0)	{
-			this.stop('no_time_for_opponent');
+						
+			if (opp_conf_play === 1)
+				this.stop('opp_timeout');
+			else
+				this.stop('opp_no_sync');
+			
 			return;
 		}
-
+		
 		//подсвечиваем красным если осталость мало времени
 		if (t === 5) {
 			objects.timer.tint=0xff0000;
@@ -1052,6 +1088,7 @@ var online_player = {
 	},
 	
 	stop : async function(final_state) {
+					
 		
 		//отключаем взаимодейтсвие с доской
 		objects.board.pointerdown=null;
@@ -1062,48 +1099,78 @@ var online_player = {
 		//элементы только для данного оппонента	
 		objects.game_buttons_cont.visible=false;
 		
-		let t = ['Вы отменили игру',999]		
 		
-		if ( final_state === 'stalemate_to_opponent' || final_state === 'stalemate_to_player')
-			t = ['Пат!\nИгра закончилась ничьей.',0]		
+		let res_db = {
+			
+			'stalemate_to_opponent' : ['Пат!\nИгра закончилась ничьей.', DRAW],
+			'stalemate_to_player' 	: ['Пат!\nИгра закончилась ничьей.', DRAW],
+			'draw' 					: ['Игра закончилась ничьей.', DRAW],
+			'checkmate_to_opponent' : ['Победа!\nВы поставили мат!', WIN],
+			'checkmate_to_player' 	: ['Поражение!\nВам поставили мат!', LOSE],
+			'opponent_gave_up' 		: ['Победа!\nСоперник сдался.', WIN],
+			'player_gave_up' 		: ['Поражение!\nВы сдались.', LOSE],
+			'opp_timeout' 			: ['Победа!\nСоперник не сделал ход.', WIN],
+			'my_timeout' 			: ['Поражение!\nУ вас закончилось время.', LOSE],
+			'opp_no_sync' 			: ['Похоже соперник не смог начать игру', NOSYNC],
+			'my_no_sync' 			: ['Похоже Вы не смогли начать игру', NOSYNC]			
+		}
 		
-		if ( final_state === 'draw')
-			t = ['Игра закончилась ничьей.',0]		
+		let res_info = res_db[final_state];
 		
-		if (final_state === 'checkmate_to_opponent')			
-			t = ['Победа!\nВы поставили мат!',1]	
-		
-		if (final_state === 'checkmate_to_player')			
-			t = ['Поражение!\nВам поставили мат!',-1]		
-		
-		if (final_state === 'opponent_gave_up')			
-			t = ['Победа!\nСоперник сдался.',1]
-		
-		if (final_state === 'player_gave_up')
-			t = ['Поражение!\nВы сдались.',-1]
-		
-		if (final_state === 'no_time_for_player'  && me_conf_play === 1)			
-			t = ['Поражение!\nУ вас закончилось время.',-1]
-		
-		if (final_state === 'no_time_for_player'  && me_conf_play === 0)			
-			t = ['Похоже Вы не смогли начать игру',999]
-		
-		if (final_state === 'no_time_for_opponent' && opp_conf_play === 1)
-			t = ['Победа!\nСоперник не сделал ход.',1]		
+		//обновляем рейтинг
+		let old_rating = my_data.rating;
+		my_data.rating = this.calc_new_rating (my_data.rating, res_info[1]);
 
-		if (final_state === 'no_time_for_opponent' && opp_conf_play === 0)
-			t = ['Похоже соперник не смог начать игру',999]		
+		//обновляем даные на карточке
+		objects.my_card_rating.text=my_data.rating;
 
-		game.play_finish_sound(t[1]);
-
-		let rating_update_info = rating.update(t[1]);		
+		//играем звук
+		game.play_finish_sound(res_info[1]);
 
 		//записываем результат игры в базу данных
-		if (t[1] !== 999)
-			firebase.database().ref("finishes/"+game_id).set({'player1':objects.my_card_name.text,'player2':objects.opp_card_name.text, 'res':t[1], 'fin_type':final_state, 'ts':firebase.database.ServerValue.TIMESTAMP});
+		if (res_info[1] === DRAW || res_info[1] === LOSE || res_info[1] === WIN) {
+			
+			//записываем результат в базу данных
+			let duration = ~~((Date.now() - this.start_time)*0.001);
+			firebase.database().ref("finishes/" + game_id + my_role).set({'player1':objects.my_card_name.text,'player2':objects.opp_card_name.text, 'res':res_info[1], 'fin_type':final_state,'duration':duration, 'ts':firebase.database.ServerValue.TIMESTAMP});
 		
-		await big_message.show(t[0],rating_update_info);
+			//увеличиваем количество игр
+			my_data.games++;
+			firebase.database().ref("players/"+[my_data.uid]+"/games").set(my_data.games);	
+
+			let check_players =[
+				'ls3844970',
+				'meZ2SiSr91BSgxoD763cGrZZww5sWo98rvrr9tARYj0=',
+				'ls1807543',
+				'ls3996035',
+				'RPYlNOh4Dpv5g2IiZc+Sc6en0gy0InfpdsZwPHJzlbE=',
+				'vk157725076',
+				'4MqwsTmjkY9YTwsZP+VlTiS7Zi6+XwOERw8Bj+yfzmY=',
+				'0bKUa5fOJS6hNU53qzI459VAbM7VCNluAMEXPcmFo6Q=',
+				'JERga13Sq681XyhSDd6tns8piJi57EtPCsuXZ9jFOkg=',
+				'ls9359789',
+				'pqLNTN3nGPlhgHHzDZj9Oe+M6c1bqSZAHaNCfGWCZ4g=',
+				'AWgYaqbra7yaWLwSKm27DiwZxgc4M1LIn+z7AxVT8us=',
+				'NizqlONZS6sQge1lJTi9ytVjhJ4jqUWJmZZmnjqVghQ=',
+				'QdHMDnRWAhSDuDV2yDm6f5jXUItmr0USiomyU4ga874=',
+				'2ghP9ja8vONuZep9zxQj6IXUY7uFdp5ZAhjZ64Z8+bc=',
+				'ls934420',
+				'ls9152430',
+				'jRD+TXmyb3wsZV8+34Z7ovZqQndV2SImUSy88rlVhZo=',
+				'JzJ06g2JqepeWjD7U6vOBXaUFVSRGlhgA8ZF6uLlRjU=',
+				'ls9894724'
+			]
+			
+			if (check_players.includes(my_data.uid) || check_players.includes(opp_data.uid))
+			{
+				firebase.database().ref("finishes2").push({'player1':objects.my_card_name.text,'player2':objects.opp_card_name.text, 'res':res_info[1], 'fin_type':final_state,'duration':duration, 'ts':firebase.database.ServerValue.TIMESTAMP});
+			}			
+		
+		}
+		
+		await big_message.show(res_info[0], `Рейтинг: ${old_rating} > ${my_data.rating}`);
 				
+		//останавливаем все остальное
 		game.stop();		
 	}
 
@@ -1214,26 +1281,17 @@ var bot_player = {
 		let t = ['Вы отменили игру',999]		
 		
 		if ( final_state === 'stalemate_to_opponent' || final_state === 'stalemate_to_player')
-			t = ['Пат!\nИгра закончилась ничьей.',0]		
+			t = ['Пат!\nИгра закончилась ничьей.',DRAW]		
 				
 		if (final_state === 'checkmate_to_opponent')
-			t = ['Победа!\nВы поставили мат!',1]				
+			t = ['Победа!\nВы поставили мат!',WIN]				
 		
 		if (final_state === 'checkmate_to_player')			
-			t = ['Поражение!\nВам поставили мат!',-1]		
+			t = ['Поражение!\nВам поставили мат!',LOSE]		
 		
-		//если выиграли бота то добавляем 1 балл к рейтингу
-		let rating_msg = ''
-		if (t[1] === 1) {
-			my_data.rating = my_data.rating + 1;	
-			objects.my_card_rating.text = my_data.rating;
-			firebase.database().ref("players/"+my_data.uid+"/rating").set(my_data.rating);
-			rating_msg = 'Рейтинг: +1'
-		}
-
-		
+	
 		game.play_finish_sound(t[1]);
-		await big_message.show(t[0],rating_msg);
+		await big_message.show(t[0],'---)))---');
 		
 		game.stop();		
 	},
@@ -1262,6 +1320,7 @@ var game={
 	move_made : [0,0,0],
 	player_under_check : 0,
 	opponent : {},
+	checker_is_moving : 0,
 
 	activate: function(role, opponent) {
 
@@ -1280,8 +1339,7 @@ var game={
 
 		//если открыт лидерборд то закрываем его
 		if (objects.lb_1_cont.visible===true)
-			lb.close();
-		
+			lb.close();		
 		
 		if (state === 'b')
 			bot_player.switch_stop();
@@ -1317,7 +1375,7 @@ var game={
 		objects.cur_move_text.text="Ход: "+move;
 		
 		//включаем взаимодейтсвие с доской
-		objects.board.pointerdown=game.mouse_down_on_board;
+		objects.board.pointerdown=game.mouse_down_on_board.bind(game);
 
 		//счетчик времени
 		timer.start(15);
@@ -1336,7 +1394,7 @@ var game={
 	
 	mouse_down_on_board : function(e) {
 
-		if (objects.big_message_cont.visible === true || objects.pawn_replace_dialog.visible === true || objects.req_cont.visible === true)	{
+		if (objects.big_message_cont.visible === true || objects.pawn_replace_dialog.visible === true || objects.req_cont.visible === true || this.checker_is_moving === 1)	{
 			game_res.resources.locked.sound.play();
 			return
 		}
@@ -1563,10 +1621,12 @@ var game={
 					
 		
 		//перемещаем мою фигуру и обновляем доску	
+		this.checker_is_moving = 1;		
 		if (castling === 1)
 			await this.make_castling_on_board(move_data);
 		else
 			await this.make_move_on_board(move_data);
+		this.checker_is_moving = 0;		
 		
 		gres.move.sound.play();
 				
@@ -1784,16 +1844,20 @@ var game={
 		else
 			pass_take = -1;
 		
-		//перемещаем мою фигуру и обновляем доску	
+		//перезапускаем таймер хода и кто ходит
+		timer.sw();		
+		my_turn = 1;			
+		
+		
+		//перемещаем мою фигуру и обновляем доску
+		this.checker_is_moving = 1;		
 		if (castling === 1)
 			await this.make_castling_on_board(move_data);
 		else
 			await this.make_move_on_board(move_data);
-		
+		this.checker_is_moving = 0;
 				
-		//перезапускаем таймер хода и кто ходит
-		timer.sw();		
-		my_turn = 1;	
+
 
 		//обозначаем что соперник сделал ход и следовательно подтвердил согласие на игру
 		opp_conf_play=1;		
@@ -1820,11 +1884,11 @@ var game={
 		
 	play_finish_sound : function(result) {
 		
-		if (result === -1 )
+		if (result === LOSE )
 			gres.lose.sound.play();
-		if (result === 1 )
+		if (result === WIN )
 			gres.win.sound.play();
-		if (result === 0 || result === 999)
+		if (result === DRAW || result === NOSYNC)
 			gres.draw.sound.play();
 		
 	},
@@ -1869,48 +1933,6 @@ var game={
 		
 	}
 
-}
-
-var rating = {
-	
-	update : function (game_result_for_player) {
-		
-		if (game_result_for_player === 999)
-			return '';
-								
-		//обновляем мой рейтинг в базе и на карточке
-		let my_old_rating = my_data.rating;
-		let my_new_rating = this.calc_my_new_rating(game_result_for_player);
-		let my_rating_change = my_new_rating - my_old_rating;
-		let opp_new_rating = opp_data.rating - my_rating_change;
-		
-		
-		my_data.rating = my_new_rating;
-		objects.my_card_rating.text = my_data.rating;
-		my_data.games++;
-				
-		//записываем в базу свой новый рейтинг и оппонента
-		firebase.database().ref("players/"+my_data.uid+"/rating").set(my_data.rating);
-		firebase.database().ref("players/"+my_data.uid+"/games").set(my_data.games);			
-		firebase.database().ref("players/"+opp_data.uid+"/rating").set(opp_new_rating);		
-
-
-		return 'Рейтинг: ' + my_old_rating + ' > ' + my_new_rating;		
-		
-	},
-	
-	calc_my_new_rating : function(res)	{
-
-		var Ea = 1 / (1 + Math.pow(10, ((opp_data.rating-my_data.rating)/400)));
-		if (res===1)
-			return Math.round(my_data.rating + 16 * (1 - Ea));
-		if (res===0)
-			return Math.round(my_data.rating + 16 * (0.5 - Ea));
-		if (res===-1)
-			return Math.round(my_data.rating + 16 * (0 - Ea));
-	
-	}	
-	
 }
 
 var keep_alive= function() {
@@ -2127,7 +2149,7 @@ var req_dialog = {
 
 	accept: function() {
 
-		if (objects.req_cont.ready===false)
+		if (objects.req_cont.ready === false)
 			return;
 
 		any_dialog_active=0;
@@ -3670,8 +3692,13 @@ async function init_game_env() {
     }
 	
 	
+	
+	
 	//загружаем данные об игроке
 	load_user_data();
+	
+	//контроль за присутсвием
+	var connected_control = firebase.database().ref(".info/connected");
 		
 	//показыаем основное меню
 	main_menu.activate();
