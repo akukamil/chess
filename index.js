@@ -3728,22 +3728,23 @@ async function load_resources() {
 	game_res=new PIXI.Loader();
 	game_res.add("m2_font", git_src+"fonts/Neucha/font.fnt");
 
-	game_res.add('receive_move',git_src+'receive_move.mp3');
-	game_res.add('note',git_src+'note.mp3');
-	game_res.add('receive_sticker',git_src+'receive_sticker.mp3');
-	game_res.add('message',git_src+'message.mp3');
-	game_res.add('lose',git_src+'/sounds/lose.wav');
-	game_res.add('draw',git_src+'/sounds/draw.wav');
-	game_res.add('eaten',git_src+'/sounds/eaten.wav');
-	game_res.add('win',git_src+'/sounds/win.mp3');
-	game_res.add('click',git_src+'/sounds/click.wav');
-	game_res.add('mini_dialog',git_src+'/sounds/mini_dialog.wav');
-	game_res.add('pawn_replace_dialog',git_src+'/sounds/pawn_replace_dialog.wav');
-	game_res.add('pawn_replace',git_src+'/sounds/pawn_replace.wav');
-	game_res.add('close',git_src+'close.mp3');
-	game_res.add('move',git_src+'move.mp3');
-	game_res.add('locked',git_src+'locked.mp3');
-	game_res.add('clock',git_src+'clock.mp3');
+
+	game_res.add('receive_move',git_src+'sounds/receive_move.mp3');
+	game_res.add('note',git_src+'sounds/note.mp3');
+	game_res.add('receive_sticker',git_src+'sounds/receive_sticker.mp3');
+	game_res.add('message',git_src+'sounds/message.mp3');
+	game_res.add('lose',git_src+'sounds/lose.mp3');
+	game_res.add('draw',git_src+'sounds/draw.mp3');
+	game_res.add('eaten',git_src+'sounds/eaten.mp3');
+	game_res.add('win',git_src+'sounds/win.mp3');
+	game_res.add('click',git_src+'sounds/click.mp3');
+	game_res.add('mini_dialog',git_src+'sounds/mini_dialog.mp3');
+	game_res.add('pawn_replace_dialog',git_src+'sounds/pawn_replace_dialog.mp3');
+	game_res.add('pawn_replace',git_src+'sounds/pawn_replace.mp3');
+	game_res.add('close',git_src+'sounds/close.mp3');
+	game_res.add('move',git_src+'sounds/move.mp3');
+	game_res.add('locked',git_src+'sounds/locked.mp3');
+	game_res.add('clock',git_src+'sounds/clock.mp3');
 	
 	
 	//добавляем фигуры отдельно
