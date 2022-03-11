@@ -850,6 +850,7 @@ var timer = {
 		else 
 			this.time_left = t;
 	
+		online_player.disconnect_time = 0;
 		objects.timer.tint=0xffffff;
 		objects.timer.text = '0:'+this.time_left;
 		clearTimeout(this.ticker);
@@ -1035,6 +1036,8 @@ var online_player = {
 		//фиксируем врему начала игры
 		this.start_time = Date.now();
 		
+		this.disconnect_time = 0;
+		
 		//вычиcляем рейтинг при проигрыше и устанавливаем его в базу он потом изменится
 		let lose_rating = this.calc_new_rating(my_data.rating, LOSE);
 		if (lose_rating >100 && lose_rating<9999)
@@ -1080,6 +1083,16 @@ var online_player = {
 			return;
 		}
 		
+		
+		if (connected === 0) {
+			this.disconnect_time ++;
+			if (this.disconnect_time > 6) {
+				this.stop('my_no_connection');
+				return;				
+			}
+		}
+		
+		
 		//подсвечиваем красным если осталость мало времени
 		if (t === 5) {
 			objects.timer.tint=0xff0000;
@@ -1101,7 +1114,7 @@ var online_player = {
 		
 		
 		let res_db = {
-			
+			'my_no_connection' : ['Потеряна связь!\nИспользуйте надежное интернет соединение.', LOSE],
 			'stalemate_to_opponent' : ['Пат!\nИгра закончилась ничьей.', DRAW],
 			'stalemate_to_player' 	: ['Пат!\nИгра закончилась ничьей.', DRAW],
 			'draw' 					: ['Игра закончилась ничьей.', DRAW],
@@ -3699,7 +3712,14 @@ async function init_game_env() {
 	
 	//контроль за присутсвием
 	var connected_control = firebase.database().ref(".info/connected");
-		
+	connected_control.on("value", (snap) => {
+	  if (snap.val() === true) {
+		connected = 1;
+	  } else {
+		connected = 0;
+	  }
+	});
+	
 	//показыаем основное меню
 	main_menu.activate();
 	
