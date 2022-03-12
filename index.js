@@ -1098,6 +1098,7 @@ var online_player = {
 		//обновляем рейтинг
 		let old_rating = my_data.rating;
 		my_data.rating = this.calc_new_rating (my_data.rating, res_info[1]);
+		firebase.database().ref("players/"+my_data.uid+"/rating").set(my_data.rating);
 
 		//обновляем даные на карточке
 		objects.my_card_rating.text=my_data.rating;
@@ -2674,9 +2675,6 @@ var cards_menu={
 			for (let i = 0 ; i < num_of_tables_to_cut ; i++) {
 				delete tables[t_keys[i]];
 			}
-				
-				
-			
 		}
 
 
