@@ -2665,7 +2665,7 @@ var cards_menu={
 		
 		//если карточек слишком много то убираем столы
 		if (num_of_cards > 14) {
-			num_of_tables_cut = num_of_tables - (num_of_cards - 14);			
+			let num_of_tables_cut = num_of_tables - (num_of_cards - 14);			
 			
 			let num_of_tables_to_cut = num_of_tables - num_of_tables_cut;
 			
