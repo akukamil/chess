@@ -838,61 +838,6 @@ var board_func={
 	}
 }
 
-var timer = {
-	
-	time_left : 0,
-	ticker : 0,
-	
-	start : function(t) {
-		
-		if (t === undefined)
-			this.time_left = 45;
-		else 
-			this.time_left = t;
-	
-		online_player.disconnect_time = 0;
-		objects.timer.tint=0xffffff;
-		objects.timer.text = '0:'+this.time_left;
-		clearTimeout(this.ticker);
-		this.ticker = setTimeout(function(){timer.tick()}, 1000);		
-		
-	},
-	
-	tick : function() {
-		
-		this.time_left--;
-		
-		if (this.time_left >= 0) {
-			if ( this.time_left >9 )
-				objects.timer.text = '0:'+this.time_left;
-			else
-				objects.timer.text = '0:0'+this.time_left;
-		}
-			
-		
-		clearTimeout(this.ticker);
-		this.ticker = setTimeout(function(){timer.tick()}, 1000);
-		
-		//отправ в игру чтобы проверять
-		if (game.opponent !== undefined)
-			game.opponent.check_time(this.time_left);
-	},
-	
-	sw : function() {
-		
-		this.start();		
-		objects.timer.x = 225 + 575 - objects.timer.x;
-		
-	},
-	
-	stop : function() {
-		
-		clearTimeout(this.ticker);
-		
-	}
-	
-}
-
 var make_text = function (obj, text, max_width) {
 
 	let sum_v=0;
@@ -997,6 +942,8 @@ var online_player = {
 	
 	start_time : 0,
 	disconnect_time : 0,
+	move_time_left : 0,
+	timer_id : 0,
 		
 	send_move : function  (move_data) {
 		
@@ -1036,6 +983,7 @@ var online_player = {
 		//фиксируем врему начала игры
 		this.start_time = Date.now();
 		
+		//обновляем время без связи
 		this.disconnect_time = 0;
 		
 		//вычиcляем рейтинг при проигрыше и устанавливаем его в базу он потом изменится
@@ -1054,16 +1002,24 @@ var online_player = {
 			g_board = [['r','n','b','k','q','b','n','r'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['x','x','x','x','x','x','x','x'],['R','N','B','K','Q','B','N','R']];
 */
 
+		//начинаем ежесекунжные проверки
+		this.second_tick(15);
 
 		board_func.update_board();
 	},
 	
-	check_time (t) {
+	second_tick (t) {
 		
 		if (state !== 'p')
 			return;
 		
-		if (t < 0 && my_turn === 1)	{
+		this.move_time_left--;		
+		
+		if (t!==undefined)
+			this.move_time_left = t;			
+
+						
+		if (this.move_time_left < 0 && my_turn === 1)	{
 			
 			if (me_conf_play === 1)
 				this.stop('my_timeout');
@@ -1073,7 +1029,7 @@ var online_player = {
 			return;
 		}
 
-		if (t < -5 && my_turn === 0)	{
+		if (this.move_time_left < -5 && my_turn === 0)	{
 						
 			if (opp_conf_play === 1)
 				this.stop('opp_timeout');
@@ -1082,22 +1038,31 @@ var online_player = {
 			
 			return;
 		}
-		
-		
+				
 		if (connected === 0) {
 			this.disconnect_time ++;
 			if (this.disconnect_time > 6) {
 				this.stop('my_no_connection');
 				return;				
 			}
-		}
-		
+		}		
 		
 		//подсвечиваем красным если осталость мало времени
-		if (t === 5) {
+		if (this.move_time_left === 10) {
 			objects.timer.tint=0xff0000;
 			game_res.resources.clock.sound.play();
 		}
+		
+		//обновляем на табло
+		if (this.move_time_left >= 0) {
+			if ( this.move_time_left >9 )
+				objects.timer.text = '0:'+this.move_time_left;
+			else
+				objects.timer.text = '0:0'+this.move_time_left;
+		}
+		
+		//вызываем через секунду
+		this.timer_id = setTimeout(function(){online_player.second_tick()}, 1000);		
 	},
 	
 	stop : async function(final_state) {
@@ -1107,7 +1072,7 @@ var online_player = {
 		objects.board.pointerdown=null;
 		
 		//отключаем таймер
-		timer.stop();
+		clearTimeout(this.timer_id);	
 		
 		//элементы только для данного оппонента	
 		objects.game_buttons_cont.visible=false;
@@ -1185,6 +1150,26 @@ var online_player = {
 				
 		//останавливаем все остальное
 		game.stop();		
+	},
+	
+	reset_timer_when_move : function() {
+		
+		//обовляем время разъединения
+		this.disconnect_time = 0;
+		
+		//перезапускаем таймер хода
+		this.move_time_left = 45;
+		
+		//обновляем на табло
+		objects.timer.text = '0:'+this.move_time_left;
+
+		if (my_turn === 1)
+			objects.timer.x = 225;
+		else
+			objects.timer.x = 575;
+
+		objects.timer.tint = 0xffffff;
+		
 	}
 
 };
@@ -1221,6 +1206,10 @@ var bot_player = {
 			stockfish.postMessage("setoption name Skill Level value 13");
 		
 		objects.stop_bot_button.visible=true;
+		
+		
+		//обновляем на табло
+		objects.timer.text = 'Мой ход';
 		
 		//устанавливаем статус в базе данных а если мы не видны то установливаем только скрытое состояние
 		set_state({state : 'b'});
@@ -1283,9 +1272,6 @@ var bot_player = {
 						
 		//отключаем взаимодейтсвие с доской
 		objects.board.pointerdown=null;
-		
-		//отключаем таймер
-		timer.stop();		
 						
 		//элементы только для данного оппонента
 		objects.stop_bot_button.visible=false;
@@ -1323,6 +1309,14 @@ var bot_player = {
 		//элементы только для данного оппонента
 		objects.stop_bot_button.visible=false;
 		
+	},
+	
+	reset_timer_when_move : function() {
+		
+		if (my_turn === 1)
+			objects.timer.x = 225;
+		else
+			objects.timer.x = 575;		
 	}
 	
 };
@@ -1371,6 +1365,7 @@ var game={
 		this.opponent.init(my_role);
 				
 		//общие элементы для игры
+		objects.timer.tint = 0xffffff;
 		objects.selected_frame.visible=false;
 		objects.board.visible=true;
 		objects.my_card_cont.visible=true;
@@ -1391,7 +1386,6 @@ var game={
 		objects.board.pointerdown=game.mouse_down_on_board.bind(game);
 
 		//счетчик времени
-		timer.start(15);
 		objects.timer.visible=true;
 		
 		//устанавливаем начальное значение съеденных фигур
@@ -1650,9 +1644,9 @@ var game={
 			board_func.update_board();			
 		}	
 		
-		//перезапускаем таймер хода и кто ходит
-		timer.sw();
+		//перезапускаем таймер хода и кто ходит			
 		my_turn = 0;			
+		this.opponent.reset_timer_when_move();	
 		
 		//отпрравляем ход оппоненту
 		this.opponent.send_move(move_data);		
@@ -1857,10 +1851,9 @@ var game={
 		else
 			pass_take = -1;
 		
-		//перезапускаем таймер хода и кто ходит
-		timer.sw();		
+		//перезапускаем таймер хода и кто ходит	
 		my_turn = 1;			
-		
+		this.opponent.reset_timer_when_move();			
 		
 		//перемещаем мою фигуру и обновляем доску
 		this.checker_is_moving = 1;		
