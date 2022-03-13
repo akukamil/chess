@@ -2015,13 +2015,10 @@ var process_new_message=function(msg) {
 			if (msg.message==="DRAWOK" )
 				online_player.stop('draw');
 			
-			//согласие на ничью
-			if (msg.message==="DRAWOK" )
-				online_player.stop('draw');
 			
 			//согласие на ничью
 			if (msg.message==="TIME" )
-				online_player.stop('no_time_for_opponent');
+				online_player.stop('opp_timeout');
 				
 			//отказ от ничьи
 			if (msg.message==="DRAWNO" )
