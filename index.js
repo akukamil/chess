@@ -1079,7 +1079,7 @@ var online_player = {
 		
 		
 		let res_db = {
-			'my_no_connection' : ['Потеряна связь!\nИспользуйте надежное интернет соединение.', LOSE],
+			'my_no_connection' 		: ['Потеряна связь!\nИспользуйте надежное интернет соединение.', LOSE],
 			'stalemate_to_opponent' : ['Пат!\nИгра закончилась ничьей.', DRAW],
 			'stalemate_to_player' 	: ['Пат!\nИгра закончилась ничьей.', DRAW],
 			'draw' 					: ['Игра закончилась ничьей.', DRAW],
@@ -1090,7 +1090,8 @@ var online_player = {
 			'opp_timeout' 			: ['Победа!\nСоперник не сделал ход.', WIN],
 			'my_timeout' 			: ['Поражение!\nУ вас закончилось время.', LOSE],
 			'opp_no_sync' 			: ['Похоже соперник не смог начать игру', NOSYNC],
-			'my_no_sync' 			: ['Похоже Вы не смогли начать игру', NOSYNC]			
+			'my_no_sync' 			: ['Похоже Вы не смогли начать игру', NOSYNC],
+			'draw_50' 				: ['Ничья!\nЗа последние 50 ходов не было взятий фигур и продвижения пешек', NOSYNC]	
 		}
 		
 		let res_info = res_db[final_state];
@@ -1232,7 +1233,7 @@ var bot_player = {
 	
 	stockfish_response : function (e) {
 		
-		console.log(e.data);		
+		//console.log(e.data);		
 		
 		if (e.data.substring(0, 8) !== 'bestmove')
 			return
@@ -1289,7 +1290,9 @@ var bot_player = {
 		if (final_state === 'checkmate_to_player')			
 			t = ['Поражение!\nВам поставили мат!',LOSE]		
 		
-	
+		if (final_state === 'draw_50')			
+			t = ['Ничья!',DRAW]		
+		
 		game.play_finish_sound(t[1]);
 		await big_message.show(t[0],'---)))---');
 		
@@ -1329,6 +1332,7 @@ var game={
 	player_under_check : 0,
 	opponent : {},
 	checker_is_moving : 0,
+	draw_50: 0,
 
 	activate: function(role, opponent) {
 
@@ -1360,6 +1364,9 @@ var game={
 		this.player_under_check = 0;
 		
 		game_res.resources.note.sound.play();
+		
+		//обновляем время без взятий и движения пешки
+		this.draw_50 = 0;
 			
 		
 		//инициируем все что связано с оппонентом
@@ -1661,6 +1668,22 @@ var game={
 		if (final_state === 'checkmate' || final_state === 'stalemate' )
 			this.opponent.stop(final_state + '_to_opponent');		
 		
+		//проверяем 50 ходов для ничьи		
+		if (my_role === 'slave') {
+			
+			let moves_notaken_nopawnmove = Math.floor(this.draw_50/2);			
+			console.log(moves_notaken_nopawnmove);
+			if (moves_notaken_nopawnmove >= 50) {
+				this.opponent.stop('draw_50');
+				return;				
+			}		
+
+			if (moves_notaken_nopawnmove === 30 || moves_notaken_nopawnmove === 35 || moves_notaken_nopawnmove === 40 || moves_notaken_nopawnmove >= 45)
+				add_message(`Ходов до ничьи: ${50-moves_notaken_nopawnmove}. Если не будет взятий или движения пешек.`)
+		}
+		
+		
+		
 		//обозначаем что я сделал ход и следовательно подтвердил согласие на игру
 		me_conf_play=1;
 
@@ -1694,6 +1717,8 @@ var game={
 			anim2.add(sf,{alpha:[1,0]}, false, 0.06,'linear');
 		}
 		
+		
+		
 		//подготавливаем данные для перестановки
 		let fig=board_func.get_checker_by_pos(move_data.x1,move_data.y1);
 		
@@ -1711,8 +1736,12 @@ var game={
 		if (pass_taken_pawn_pos_y !== 0)
 			eaten_figure = g_board[pass_taken_pawn_pos_y][x2];
 		
+		//увеличиваем количество ходов без взятия и движения пешек
+		this.draw_50++;
+		
 		if (eaten_figure!=='x') {
 			
+			this.draw_50 = 0;
 			gres.eaten.sound.play();
 			
 			if (my_eaten[eaten_figure] !== undefined) {
@@ -1734,6 +1763,9 @@ var game={
 			}
 		}
 		
+		//проверяем что это движение пешки
+		if (g_board[y1][x1] === 'p' || g_board[y1][x1] === 'P')
+			this.draw_50 = 0;
 		
 		//обновляем доску
 		g_board[y2][x2] = g_board[y1][x1];
@@ -1746,6 +1778,8 @@ var game={
 		if (move_data.pawn_replace !== undefined) 
 			g_board[y2][x2] = move_data.pawn_replace;	
 			
+			
+		
 		board_func.update_board();
 	},
 	
@@ -1871,14 +1905,27 @@ var game={
 		
 		//проверяем звершение игры
 		let final_state = board_func.check_fin(g_board,'w');		
-					
-	
+						
 		if (final_state === 'checkmate' || final_state === 'stalemate' ) {
 			this.opponent.stop(final_state + '_to_player');			
 			return;
 		}
+		
+		//проверяем 50 ходов для ничьи		
+		if (my_role === 'master') {
+			
+			let moves_notaken_nopawnmove = Math.floor(this.draw_50/2);			
+			console.log(moves_notaken_nopawnmove);
+			if (moves_notaken_nopawnmove >= 50) {
+				this.opponent.stop('draw_50');
+				return;				
+			}		
 
-
+			if (moves_notaken_nopawnmove === 30 || moves_notaken_nopawnmove === 35 || moves_notaken_nopawnmove === 40 || moves_notaken_nopawnmove >= 45)
+				add_message(`Ходов до ничьи: ${50-moves_notaken_nopawnmove}. Если не будет взятий или движения пешек.`)
+			
+		}
+		
 		//поверяем шах
 		if (final_state === 'check') {
 			add_message("Шах!");			
@@ -1887,6 +1934,8 @@ var game={
 			this.player_under_check = 0;
 		}
 		
+
+	
 	},
 		
 	play_finish_sound : function(result) {
