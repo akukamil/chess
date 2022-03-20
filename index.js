@@ -1308,7 +1308,7 @@ var bot_player = {
 		objects.board.pointerdown=null;
 		
 		//отключаем таймер
-		timer.stop();		
+		//timer.stop();		
 						
 		//элементы только для данного оппонента
 		objects.stop_bot_button.visible=false;
