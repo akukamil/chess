@@ -2088,7 +2088,7 @@ var process_new_message=function(msg) {
 		}
 		if (msg.message==="INV_REM") {
 			//запрос игры обновляет данные оппонента поэтому отказ обрабатываем только от актуального запроса
-			if (msg.sender===opp_data.uid)
+			if (msg.sender === req_dialog._opp_data.uid)
 				req_dialog.hide(msg.sender);
 		}
 	}
@@ -2184,6 +2184,8 @@ var req_dialog = {
 
 		if (objects.req_cont.ready===false)
 			return;
+		
+		
 
 		anim.add_pos({obj:objects.req_cont,param:'y',vis_on_end:false,func:'easeInBack',val:['sy', 	-260],	speed:0.05});
 		firebase.database().ref("inbox/"+req_dialog._opp_data.uid).set({sender:my_data.uid,message:"REJECT",tm:Date.now()});
