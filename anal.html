@@ -67,17 +67,20 @@
   		<div class="two_buttons_area">
 
 			<div class="button_with_text">
-				<button class="button" onclick="states_room('states')">Комната №1</button>
+				<button class="button" id ="but_ref1" onclick="states_room('states')">Комната №1</button>
 			</div>
 
 			<div class="button_with_text">
-				<button class="button" onclick="states_room('states2')">Комната №2</button>
+				<button class="button" id ="but_ref2"  onclick="states_room('states2')">Комната №2</button>
+			</div>
+			
+			<div class="button_with_text">
+				<button class="button" id ="but_ref3"  onclick="states_room('states3')">Комната №3</button>
 			</div>
 
 		</div>
-		
-
-  		<div class="two_buttons_area">
+  		
+		<div class="two_buttons_area">
 
 			<div class="button_with_text">
 				<button class="button" onclick="show_leaders()">Таблица лидеров</button>
@@ -145,6 +148,32 @@ firebase.initializeApp({
 });
 
 
+//количество игроков в комнатах. показывает при загрузке
+async function update_room_quick_stat() {
+
+	
+	
+	//считываем текущее время
+	console.time();
+	await firebase.database().ref("server_time").set(firebase.database.ServerValue.TIMESTAMP);
+	let _cur_ts = await firebase.database().ref("server_time").once('value');
+	console.timeEnd();
+	
+
+	firebase.database().ref('states').once('value').then((snapshot) => {
+		document.getElementById("but_ref1").textContent = Object.keys(snapshot.val()).length;
+	})
+	
+	firebase.database().ref('states2').once('value').then((snapshot) => {
+		document.getElementById("but_ref2").textContent = Object.keys(snapshot.val()).length;
+	})
+	
+	firebase.database().ref('states3').once('value').then((snapshot) => {
+		document.getElementById("but_ref3").textContent = Object.keys(snapshot.val()).length;
+	})
+
+}
+
 //ВСЕ ИГРОКИ С ОПРЕДЕЛЕННОГО ВРЕМЕНИ
 function all_players() {
 	
@@ -172,8 +201,6 @@ function all_players() {
 	})
 }
 
-
-
 //КОНКРЕТНЫЙ ИГРОК
 async function player_info() {
 	
@@ -198,12 +225,10 @@ async function player_info() {
 	my_table.create(_data, header, 'none', 'list');	
 }
 
-
 //удалить историю игр
 function delete_game_results(ref) {	
 	firebase.database().ref(ref).remove();
 }
-
 
 //удалить старых игроков
 async function delete_old_players() {	
@@ -237,8 +262,6 @@ async function delete_old_players() {
 	alert("Удалено игроков: "+total_removed);
 
 }
-
-
 
 //ИГРЫ
 async function get_games(ref) {
@@ -302,7 +325,6 @@ function show_leaders() {
 	})
 }
 
-
 //СОСТОЯНИЕ КОМНАТ
 async function states_room(room) {
 
@@ -345,9 +367,6 @@ async function states_room(room) {
 	my_table.create(_data, header, room, 'states');	
 }
 
-
-//firebase.database().ref("finishes").remove();
-//firebase.database().ref("players/vNx2vRus1XIPlMFllQmDnqWfV3YZp7Ff5hYis5eKllc=/rating").set(2100);
 function get_state_tint(s) {
 	
 	switch(s) {
@@ -508,6 +527,8 @@ var my_table = {
 
 	
 </script>
+
+<body onload="update_room_quick_stat()">
 
 </body>
 </html>
