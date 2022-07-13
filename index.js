@@ -2204,7 +2204,7 @@ var req_dialog = {
 
 	accept: function() {
 
-		if (objects.req_cont.ready === false)
+		if (objects.req_cont.ready === false || objects.big_message_cont.visible === true)
 			return;
 
 		any_dialog_active=0;
