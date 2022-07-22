@@ -2248,7 +2248,7 @@ var req_dialog = {
 
 	accept: function() {
 
-		if (anim2.any_on()===true || objects.big_message_cont.visible === true || objects.pawn_replace_dialog.visible === true) {
+		if (anim2.any_on()===true || objects.big_message_cont.visible === true || objects.feedback_cont.visible === true || objects.pawn_replace_dialog.visible === true) {
 			sound.play('locked');
 			return;			
 		}
@@ -3690,7 +3690,7 @@ async function load_user_data() {
 			room_name= 'states2';			
 		else
 			room_name= 'states';
-		
+		room_name= 'states3';
 		//устанавливаем рейтинг в попап
 		objects.id_rating.text=objects.my_card_rating.text=my_data.rating;
 
